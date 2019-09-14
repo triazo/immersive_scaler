@@ -22,7 +22,20 @@ sys.exit()
 
 
 # Docs on what to add to the blender console to reload this
+fullpath="c:/Users/adam/projects/vrc avatars/avatar_resize/"
+
 import sys
 import importlib
-sys.path.add("/home/triazo/projects/blender-vrcavatars/fbt-resize")
+sys.path.append(fullpath)
 import fbt_resize
+
+# Then, in a loop
+importlib.reload(fbt_resize); fbt_resize.main(bpy)
+
+# In emacs, get path with
+#default-directory
+"c:/Users/adam/projects/vrc avatars/avatar_resize/"
+
+fbt_resize.scale_legs_to_floor(bpy)
+fbt_resize.move_to_floor(bpy)
+fbt_resize.scale_to_height(bpy, 1.58)
