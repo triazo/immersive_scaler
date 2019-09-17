@@ -205,7 +205,6 @@ def scale_legs_to_floor(bpy):
     move_to_floor(bpy)
 
 
-
 def scale_to_height(bpy, new_height):
     obj = bpy.data.objects['Armature']
     old_height = get_highest_point(bpy)
