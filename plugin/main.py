@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import math
 
 bl_info = {
     "name": "Armature tuning",
@@ -39,7 +40,6 @@ def measure_wingspan(obj):
             length += bone_gap + bone_length
     print(length)
 
-    # Naieve implementaiton, just assumes t-pose
     left_hand = pose_bones['Left wrist']
     right_hand = pose_bones['Right wrist']
     print((left_hand.head - right_hand.head).length)
@@ -65,18 +65,53 @@ def get_highest_point():
 
     return(highest_vertex.co[2])
 
+
 def get_view_y(obj):
+    # TODO: go to T-pose and reset
+
     # Gets the in-vrchat virtual height that the view will be at,
     # relative to your actual floor.
     rhandpos = obj.pose.bones['Right wrist'].head
     headpos = obj.pose.bones['Head'].head
 
-
     # Magic that somebody posted in discord. I'm going to just assume
     # these constants are correct.
     view_y = ((headpos - rhandpos).length / .4537) + .005
     print("View coord is %f"%view_y)
+
     return view_y
+
+def calculate_arm_rescaling(obj, head_arm_change):
+    # Calculates the percent change in arm length needed to create a
+    # given change in head-hand length.
+
+    # TODO: go to T-pose to measure and reset at the end
+
+    rhandpos = obj.pose.bones['Right wrist'].head
+    rarmpos = obj.pose.bones['Right arm'].head
+    headpos = obj.pose.bones['Head'].head
+
+    total_length = (headpos - rhandpos).length
+    arm_length = (rarmpos - rhandpos).length
+    neck_length = abs((headpos[2] - rhandpos[2]))
+
+    # Also derived using sympy. See below.
+    shoulder_length = math.sqrt((total_length - neck_length) * (total_length + neck_length)) - arm_length
+
+    # funky equation for all this - derived with sympy:
+    # solveset(Eq(a * x, sqrt((c * b + s)**2 + y**2)), b)
+    # where
+    # x is total length
+    # c is arm length
+    # y is neck length
+    # a is head_arm_change
+    # s is shoulder_length
+    # Drawing a picture with the arm and neck as a right triangle is necessary to understand this
+
+    arm_change = (math.sqrt((head_arm_change * total_length - neck_length) * (head_arm_change * total_length + neck_length)) / arm_length) - (shoulder_length / arm_length)
+
+    return arm_change
+
 
 def get_eye_height(obj):
     pose_bones = obj.pose.bones
@@ -100,7 +135,7 @@ def get_leg_length(obj):
     # Assumes exact symmetry between right and left legs
     return obj.pose.bones['Left leg'].head[2] - get_lowest_point()
 
-def scale_legs_to_floor():
+def scale_to_floor(arm_to_legs):
     obj = bpy.data.objects['Armature']
     # bo_context(bpy, bpy.ops.object.mode_set, mode='POSE', toggle = False)
     bpy.ops.cats_manual.start_pose_mode()
@@ -110,14 +145,26 @@ def scale_legs_to_floor():
     eye_y = get_eye_height(obj)
 
     # Compensate for the difference in in-game view and actual view with leg height
-    leg_adjust = eye_y - view_y
-    leg_length = get_leg_length(obj)
+    rescale_ratio = eye_y / view_y
+    leg_height_portion = get_leg_length(obj) / eye_y
 
-    leg_scale_ratio = (leg_length - leg_adjust) / leg_length
+    rescale_leg_ratio = rescale_ratio ** arm_to_legs
+    rescale_arm_ratio = rescale_ratio ** (1-arm_to_legs)
+
+    leg_scale_ratio = 1 - (1 - (1/rescale_leg_ratio)) / leg_height_portion
+    arm_scale_ratio = calculate_arm_rescaling(obj, rescale_arm_ratio)
+
+    print("Total required scale factor is %f" % rescale_ratio)
     print("Scaling legs by a factor of %f" % leg_scale_ratio)
+    print("Scaling arms by a factor of %f" % arm_scale_ratio)
 
+    # TODO: play aronud with scaling in the other directions as
+    # well. How should this be exposed?
     for leg in ["Left leg", "Right leg"]:
         obj.pose.bones[leg].scale = (1, leg_scale_ratio, 1)
+
+    for arm in ["Left arm", "Right arm"]:
+        obj.pose.bones[arm].scale = (1, arm_scale_ratio, 1)
 
     try:
         bpy.ops.cats_manual.pose_to_rest()
@@ -167,6 +214,11 @@ def scale_to_height(new_height):
     bpy.ops.transform.resize( value = (scale_ratio, scale_ratio, scale_ratio) )
     bpy.ops.object.transform_apply(location = True, scale = True,  rotation = True)
 
+def rescale_main(new_height, arm_to_legs):
+    scale_to_floor(arm_to_legs)
+    move_to_floor()
+    scale_to_height(new_height)
+
 
 class ArmatureLegsToFloor(bpy.types.Operator):
     """Script to scale an armature's frame so that the floor lines up in vrchat"""
@@ -175,7 +227,7 @@ class ArmatureLegsToFloor(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        scale_legs_to_floor()
+        scale_to_floor(1.0)
 
         return {'FINISHED'}
 
@@ -203,11 +255,26 @@ class ArmatureScaleToHeight(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class ArmatureRescale(bpy.types.Operator):
+    """Script to scale most aspects of an armature for use in vrchat"""
+    bl_idname = "armature.rescale"
+    bl_label = "Rescale Armature"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    target_height: bpy.props.FloatProperty(name="Target Height", default=1.61)
+    arm_to_legs: bpy.props.FloatProperty(name="Arm to Leg ratio", default=1.0, soft_min = 0, soft_max = 1.0)
+
+    def execute(self, context):
+        rescale_main(self.target_height,  self.arm_to_legs)
+
+        return {'FINISHED'}
+
 
 def register():
     bpy.utils.register_class(ArmatureLegsToFloor)
     bpy.utils.register_class(ArmatureMoveToFloor)
     bpy.utils.register_class(ArmatureScaleToHeight)
+    bpy.utils.register_class(ArmatureRescale)
     print("Registering Armature tuning add-on")
 
 def unregister():
@@ -215,6 +282,7 @@ def unregister():
     bpy.utils.unregister_class(ArmatureLegsToFloor)
     bpy.utils.unregister_class(ArmatureMoveToFloor)
     bpy.utils.unregister_class(ArmatureScaleToHeight)
+    bpy.utils.unregister_class(ArmatureRescale)
     print("Unregistering Armature tuning add-on")
 
 if __name__ == "__main__":
