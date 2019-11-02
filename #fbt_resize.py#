@@ -136,6 +136,19 @@ def get_view_y(bpy, obj):
     print("View coord is %f"%view_y)
     return view_y
 
+def shrink_neck(bpy):
+    # TODO:
+    #
+    # 1) shrink neck bone to almost nothing in pose mode
+    # 2) move head bone to encompass the neck bone
+    # 3) make all vertex weights of the head equal to it's weight of the head plus the neck
+    #
+    # v.weight['head'] = v.weight['head'] + v.weight['neck']
+    #
+    # VRC mod
+    pass
+
+
 def move_to_floor(bpy):
     obj = bpy.data.objects['Body']
     dz = get_lowest_point(bpy)
@@ -162,6 +175,8 @@ def move_to_floor(bpy):
 
     bpy.context.scene.cursor_location = (0, 0, 0)
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+
+
 
 def scale_legs_to_floor(bpy):
     obj = bpy.data.objects['Armature']
