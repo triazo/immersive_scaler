@@ -154,11 +154,11 @@ def get_leg_length(obj):
     # Assumes exact symmetry between right and left legs
     return obj.pose.bones['Left leg'].head[2] - get_lowest_point()
 
-def scale_to_floor(arm_to_legs):
+def scale_to_floor(arm_to_legs, limb_thickness, extra_leg_length, scale_hand):
     obj = bpy.data.objects['Armature']
     arm = get_armature()
 
-    view_y = get_view_y(obj)
+    view_y = get_view_y(obj) + extra_leg_length
     eye_y = get_eye_height(obj)
 
     # TODO: add an option for people who *want* their legs below the floor.
@@ -180,13 +180,16 @@ def scale_to_floor(arm_to_legs):
 
     bpy.ops.cats_manual.start_pose_mode()
 
-    for leg in ["Left leg", "Right leg"]:
-        obj.pose.bones[leg].scale = (1, leg_scale_ratio, 1)
-    for arm in ["Left arm", "Right arm"]:
-        obj.pose.bones[arm].scale = (1, arm_scale_ratio, 1)
-    for hand in ["Left wrist", "Right wrist"]:
-        obj.pose.bones[hand].scale = (1, 1 / arm_scale_ratio, 1)
+    leg_thickness = limb_thickness + leg_scale_ratio * (1 - limb_thickness)
+    arm_thickness = limb_thickness + arm_scale_ratio * (1 - limb_thickness)
 
+    for leg in ["Left leg", "Right leg"]:
+        obj.pose.bones[leg].scale = (leg_thickness, leg_scale_ratio, leg_thickness)
+    for arm in ["Left arm", "Right arm"]:
+        obj.pose.bones[arm].scale = (arm_thickness, arm_scale_ratio, arm_thickness)
+    if not scale_hand:
+        for hand in ["Left wrist", "Right wrist"]:
+            obj.pose.bones[hand].scale = (1 / arm_thickness, 1 / arm_scale_ratio, 1 / arm_thickness)
 
     try:
         bpy.ops.cats_manual.pose_to_rest()
@@ -241,8 +244,8 @@ def scale_to_height(new_height):
     # CATS again?
     bpy.ops.object.transform_apply(location = True, scale = True,  rotation = True)
 
-def rescale_main(new_height, arm_to_legs):
-    scale_to_floor(arm_to_legs)
+def rescale_main(new_height, arm_to_legs, limb_thickness, extra_leg_length, scale_hand):
+    scale_to_floor(arm_to_legs, limb_thickness, extra_leg_length, scale_hand)
     move_to_floor()
     scale_to_height(new_height)
 
@@ -250,18 +253,23 @@ def rescale_main(new_height, arm_to_legs):
 def point_bone(bone, point):
     v1 = (bone.tail - bone.head).normalized()
     v2 = (bone.head - point).normalized()
-    vg = bone.id_data.matrix_world.to_quaternion()
-    a = v2.cross(v1)
 
-    print("Pose bone rotation: %s" % str(vg))
+    # Need to transform the global rotation between the twe vectors
+    # into the local space of the bone
+    #
+    # Essentially, R_l = B @ R_g @ B^-1
+    # where
+    # R is the desired rotation (rotation_quat_pose)
+    #  R_l is the local rotaiton
+    #  R_g is the global rotation
+    #  B is the bone's global rotation
+    #  B^-1 is the inverse of the bone's rotation
+    rotation_quat_pose = v1.rotation_difference(v2)
+    bm = bone.matrix.to_quaternion()
+    bm.rotate(rotation_quat_pose)
+    bm.rotate(bone.matrix.inverted())
 
-    w = 1 + v1.dot(v2)
-    print(v1, v2, w)
-
-    global_quat = mathutils.Quaternion((w,a[0],a[1],a[2])).normalized().inverted()
-    global_quat.rotate(vg)
-
-    bone.rotation_quaternion = global_quat
+    bone.rotation_quaternion = bm
 
 def spread_fingers():
     obj = bpy.data.objects['Armature']
@@ -273,41 +281,6 @@ def spread_fingers():
     bpy.ops.cats_manual.pose_to_rest()
 
 
-class ArmatureLegsToFloor(bpy.types.Operator):
-    """Script to scale an armature's frame so that the floor lines up in vrchat"""
-    bl_idname = "armature.scale_legs_to_floor"
-    bl_label = "Scale Legs to Floor"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        scale_to_floor(1.0)
-
-        return {'FINISHED'}
-
-class ArmatureMoveToFloor(bpy.types.Operator):
-    """Script to move an armature to the ground so that the lowest point in the associated mesh is at height 0"""
-    bl_idname = "armature.move_to_floor"
-    bl_label = "Move Armature to Floor"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        move_to_floor()
-
-        return {'FINISHED'}
-
-class ArmatureScaleToHeight(bpy.types.Operator):
-    """Script to scale an armature so that the highest point is at a certian height"""
-    bl_idname = "armature.scale_to_height"
-    bl_label = "Scale Armature to Height"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    target_height: bpy.props.FloatProperty(name="Target Height", default=1.61)
-
-    def execute(self, context):
-        scale_to_height(self.target_height)
-
-        return {'FINISHED'}
-
 class ArmatureRescale(bpy.types.Operator):
     """Script to scale most aspects of an armature for use in vrchat"""
     bl_idname = "armature.rescale"
@@ -315,23 +288,13 @@ class ArmatureRescale(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     target_height: bpy.props.FloatProperty(name="Target Height", default=1.61)
-    arm_to_legs: bpy.props.FloatProperty(name="Arm to Leg ratio", default=1.0, soft_min = 0, soft_max = 1.0)
+    arm_to_legs: bpy.props.FloatProperty(name="Arm to Leg ratio", default=1.0, soft_min=0, soft_max=1.0)
+    limb_thickness: bpy.props.FloatProperty(name="Limb Thickness", default=1.0, soft_min=0, soft_max=1.0)
+    extra_leg_length: bpy.props.FloatProperty(name="Extra leg Length", default = 0)
+    scale_hand: bpy.props.BoolProperty(name="Scale Hand", default = False)
 
     def execute(self, context):
-        rescale_main(self.target_height,  self.arm_to_legs)
-
-        return {'FINISHED'}
-
-class ArmatureForceT(bpy.types.Operator):
-    """Forces an armature into t-pose"""
-    bl_idname = "armature.tpose"
-    bl_label = "Force T Pose"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        bpy.ops.object.mode_set(mode='POSE', toggle = False)
-        obj = get_armature()
-        print(head_to_hand(obj))
+        rescale_main(self.target_height, self.arm_to_legs, self.limb_thickness, self.extra_leg_length, self.scale_hand)
 
         return {'FINISHED'}
 
@@ -347,20 +310,12 @@ class ArmatureSpreadFingers(bpy.types.Operator):
 
 
 def register():
-    bpy.utils.register_class(ArmatureLegsToFloor)
-    bpy.utils.register_class(ArmatureMoveToFloor)
-    bpy.utils.register_class(ArmatureScaleToHeight)
     bpy.utils.register_class(ArmatureRescale)
-    bpy.utils.register_class(ArmatureForceT)
     bpy.utils.register_class(ArmatureSpreadFingers)
     print("Registering Armature tuning add-on")
 
 def unregister():
     print("Attempting to unregister armature turing add-on")
-    bpy.utils.unregister_class(ArmatureLegsToFloor)
-    bpy.utils.unregister_class(ArmatureMoveToFloor)
-    bpy.utils.unregister_class(ArmatureScaleToHeight)
-    bpy.utils.unregister_class(ArmatureRescale)
     bpy.utils.unregister_class(ArmatureForceT)
     bpy.utils.unregister_class(ArmatureSpreadFingers)
     print("Unregistering Armature tuning add-on")
