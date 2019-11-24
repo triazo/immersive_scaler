@@ -134,8 +134,8 @@ def calculate_arm_rescaling(obj, head_arm_change):
 
 def get_eye_height(obj):
     pose_bones = obj.pose.bones
-    left_eye = pose_bones['LeftEye']
-    right_eye = pose_bones['RightEye']
+    left_eye = pose_bones['Eye_L']
+    right_eye = pose_bones['Eye_R']
     eye_average = (left_eye.head + right_eye.head) / 2
 
     return eye_average[2]
@@ -221,7 +221,14 @@ def move_to_floor():
     arm.select = True
     bpy.ops.object.mode_set(mode='EDIT', toggle = False)
     for bone in arm.data.edit_bones:
-        bone.transform(mathutils.Matrix.Translation((0, 0, -dz)))
+        #bone.transform(mathutils.Matrix.Translation((0, 0, -dz)))
+        before_zs = {b.name: b.head.z for b in arm.data.edit_bones}
+        bone.head.z -= dz
+        bone.tail.z -= dz
+        for b in arm.data.edit_bones:
+            if b.name != bone.name and b.head.z != before_zs[b.name]:
+                print("Bone %s also changed bone %s: %f to %f"%(bone.name, b.name, before_zs[b.name], b.head.z))
+        #print("%s: %f -> %f: %f"%(bone.name, bz, az, bz - az))
     bpy.ops.object.mode_set(mode='EDIT', toggle = True)
 
     bpy.context.scene.cursor.location = (0, 0, 0)
@@ -271,12 +278,14 @@ def point_bone(bone, point):
 
     bone.rotation_quaternion = bm
 
-def spread_fingers():
+def spread_fingers(spare_thumb):
     obj = bpy.data.objects['Armature']
     bpy.ops.cats_manual.start_pose_mode()
     for hand_name in ['Right wrist', 'Left wrist']:
         hand = obj.pose.bones[hand_name]
         for finger in hand.children:
+            if "thumb" in finger.name.lower() and spare_thumb:
+                continue
             point_bone(finger, hand.head)
     bpy.ops.cats_manual.pose_to_rest()
 
@@ -304,8 +313,10 @@ class ArmatureSpreadFingers(bpy.types.Operator):
     bl_label = "Spread Fingers"
     bl_options = {'REGISTER', 'UNDO'}
 
+    spare_thumb: bpy.props.BoolProperty(name="Spare Thumb", default = False)
+
     def execute(self, context):
-        spread_fingers()
+        spread_fingers(self.spare_thumb)
         return {'FINISHED'}
 
 
