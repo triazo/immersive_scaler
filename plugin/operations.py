@@ -2,10 +2,17 @@ import bpy
 import mathutils
 import math
 
-bl_info = {
-    "name": "Armature tuning",
-    "category": "Armature"
-}
+def make_annotations(cls):
+    bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
+    if bl_props:
+        if '__annotations__' not in cls.__dict__:
+            setattr(cls, '__annotations__', {})
+        annotations = cls.__dict__['__annotations__']
+        for k, v in bl_props.items():
+            annotations[k] = v
+            delattr(cls, k)
+    return cls
+
 
 def get_objects():
     return bpy.context.scene.objects
@@ -320,12 +327,14 @@ class ArmatureSpreadFingers(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def register():
+def ops_register():
     bpy.utils.register_class(ArmatureRescale)
+    make_annotations(ArmatureRescale)
     bpy.utils.register_class(ArmatureSpreadFingers)
+    make_annotations(ArmatureSpreadFingers)
     print("Registering Armature tuning add-on")
 
-def unregister():
+def ops_unregister():
     print("Attempting to unregister armature turing add-on")
     bpy.utils.unregister_class(ArmatureForceT)
     bpy.utils.unregister_class(ArmatureSpreadFingers)
