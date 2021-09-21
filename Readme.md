@@ -10,10 +10,16 @@ Scaler is a one click blender plugin to match VRChat scale to your own
 world and your own proportions.
 
 Before:
-![Unscaled Avatar](https://github.com/triazo/avatar_resize/blob/master/Static/Unscaled-1.m4v?raw=true)
+![Unscaled Avatar](https://user-images.githubusercontent.com/6687043/134242576-035c0031-f532-40ca-a704-7bb4efc69829.mp4)
+
+
 
 One click in blender later:
-![Scaled Avatar](https://github.com/triazo/avatar_resize/blob/master/Static/Scaled-1.m4v?raw=true)
+![Scaled Avatar](https://user-images.githubusercontent.com/6687043/134242292-bbbb7803-377b-440f-8d76-ade58c2176ac.mp4)
+
+
+
+
 
 
 
