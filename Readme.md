@@ -9,16 +9,16 @@ and virtual height. If those are off it can ruin immersion. Immersive
 Scaler is a one click blender plugin to match VRChat scale to your own
 world and your own proportions.
 
-Before:
-![Unscaled Avatar](https://user-images.githubusercontent.com/6687043/134242576-035c0031-f532-40ca-a704-7bb4efc69829.mp4)
+
+Before: 
+
+https://user-images.githubusercontent.com/6687043/134242576-035c0031-f532-40ca-a704-7bb4efc69829.mp4
 
 
 
 One click in blender later:
-![Scaled Avatar](https://user-images.githubusercontent.com/6687043/134242292-bbbb7803-377b-440f-8d76-ade58c2176ac.mp4)
 
-
-
+https://user-images.githubusercontent.com/6687043/134242292-bbbb7803-377b-440f-8d76-ade58c2176ac.mp4
 
 
 
@@ -30,41 +30,65 @@ dependency on the pose mode operations.
 
 Import your avatar, use the CATS fix (no arguments necessary, I've just observed weird behavior when run against armatures without this), and hit the 'rescale avatar' button.
 
+
+![UI](https://triazo.net/files/blender_2021-09-21_16-42-01.png)
+
 Options are:
 
-- Target Height: The in game height of an avatar. This includes extra
+- **Target Height**: The in game height of an avatar. This includes extra
   leg length.
 
-- Arm to Leg Ratio: If rescaling needs to be done, how much should the
+- **Leg/Arm Scaling**: If rescaling needs to be done, how much should the
   legs be changed (shortened, most of the time), and how much should
   the arms be changed (lengthened, most of the time). A value of 1
   will only affect the legs, and a value of 0 will only affect the
   arms. This works outside of the range zero to one, but will probably
   look weird.
 
-- Limb Thickness: In many cases, fat legs or spagetti arms look weird,
-  so this option will also scale the girth of the limbs along with the
-  length. A value of 1 will do no scaling and a value of 0 will do the
-  same amount of scaling of girth as is being applied to the
-  length. This works outside of the range zero to one, but will
-  probably look weird.
+- **Arm Thickness**: When making the arms longer (or shorter), this 
+  determines how much the other axis should be scaled to match the 
+  length increase. A value of 1 will keep arm proportions exactly, 
+  while a value of 0 will give you spagetti arms.
 
-- Extra Leg Length: In case no configuration where the avatar's feet
+- **Leg Thickness**: When making the legs shorter (or longer), this 
+  determines how much the other axis should be scaled to match the 
+  length increase. A value of 1 will keep leg proportions exactly, 
+  giving you spagetti legs, while a value of 0 will give you fat pancake
+  legs.
+
+- **Extra Leg Length**: In case no configuration where the avatar's feet
   touch the floor looks any good, you can have the avatar's feet and
   virtual floor be underneath your real floor by a certian amount by
   setting this number to be nonzero. An extra leg length of 1 will put
   the virtual floor one meter below your real floor.
 
-- Scale Hand: Sets if the hand should be lengthened and widened along
-  with the arm. In many cases skinny long hands at the end of spagetti
-  arms looks even weirder than regular hands on the end of spagetti
-  arms, this is off by default.
+- **Center Model**: When set to true, the model will be centered at 
+  x,y = 0,0 in blender, as well as moved to the floor. When off, 
+  the avatar is still moved to the floor z=0
+  
+- **Skip Main Rescale**: Skips the main portion of the rescale, keeping 
+  avatar proportions as they started. The plugin will remove any space 
+  between the bottom of the avatar and blender's z=0 plane, and scale 
+  the height to match.
+  
+- **Skip move to floor**: Skips the step where the avatar is moved to the 
+  floor. It still attempts to do the main rescale and scale the height.
+
+- **Skip Height Scaling**: The avatar will not be scaled to height, and 
+  will keep the height it had after resizing the legs and moving the 
+  avatar to the floor. 
 
 
 ## Spreading Fingers
 
 There is another function in here for knuckles (index) controller
-users to spread fingers. Most armatures have fingers in parallel with
+users to spread fingers. Many armatures have fingers in parallel with
 each other when fully open (only with finger tracking), which is an
 uncomfortable position for fingers, so this sets the rest pose of your
 fingers in what is hopefully a more natural position
+
+## Hip fix
+
+In some models it helps to shrink the hip bone. This is just a shortcut 
+to move the hip bone almost all the way to the spine.
+
