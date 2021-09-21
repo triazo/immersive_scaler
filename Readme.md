@@ -1,6 +1,21 @@
-Armature tweaking
+Immersive Scaler
 ===========
-Fine tuned automated avatar resizing, for vrchat
+Fine tuned automated avatar scaling, for vrchat
+
+## Purpose
+
+VRChat uses avatar scale and proportions to get world vr world size
+and virtual height. If those are off it can ruin immersion. Immersive
+Scaler is a one click blender plugin to match VRChat scale to your own
+world and your own proportions.
+
+Before:
+![Unscaled Avatar](https://github.com/triazo/avatar_resize/blob/master/Static/Unscaled-1.m4v?raw=true)
+
+One click in blender later:
+![Scaled Avatar](https://github.com/triazo/avatar_resize/blob/master/Static/Scaled-1.m4v?raw=true)
+
+
 
 ## Usage
 
