@@ -97,6 +97,8 @@ each other when fully open (only with finger tracking), which is an
 uncomfortable position for fingers, so this sets the rest pose of your
 fingers in what is hopefully a more natural position
 
+- **Spare thumb**: This option prevents the thumb bone from also being moved.
+
 ## Hip fix
 
 In some models it helps to shrink the hip bone. This is just a shortcut
