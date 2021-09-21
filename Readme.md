@@ -10,7 +10,7 @@ Scaler is a one click blender plugin to match VRChat scale to your own
 world and your own proportions.
 
 
-Before: 
+Before:
 
 https://user-images.githubusercontent.com/6687043/134242576-035c0031-f532-40ca-a704-7bb4efc69829.mp4
 
@@ -28,7 +28,9 @@ https://user-images.githubusercontent.com/6687043/134242292-bbbb7803-377b-440f-8
 First, install the CATS plugin. There is currently a hard
 dependency on the pose mode operations.
 
-Import your avatar, use the CATS fix (no arguments necessary, I've just observed weird behavior when run against armatures without this), and hit the 'rescale avatar' button.
+Import your avatar, use the CATS fix (no arguments necessary,
+I've just observed weird behavior when run against armatures without
+this), and hit the 'Rescale Armature' button. Tweak options as necessary.
 
 
 ![UI](https://triazo.net/files/blender_2021-09-21_16-42-01.png)
@@ -45,14 +47,14 @@ Options are:
   arms. This works outside of the range zero to one, but will probably
   look weird.
 
-- **Arm Thickness**: When making the arms longer (or shorter), this 
-  determines how much the other axis should be scaled to match the 
-  length increase. A value of 1 will keep arm proportions exactly, 
+- **Arm Thickness**: When making the arms longer (or shorter), this
+  determines how much the other axis should be scaled to match the
+  length increase. A value of 1 will keep arm proportions exactly,
   while a value of 0 will give you spagetti arms.
 
-- **Leg Thickness**: When making the legs shorter (or longer), this 
-  determines how much the other axis should be scaled to match the 
-  length increase. A value of 1 will keep leg proportions exactly, 
+- **Leg Thickness**: When making the legs shorter (or longer), this
+  determines how much the other axis should be scaled to match the
+  length increase. A value of 1 will keep leg proportions exactly,
   giving you spagetti legs, while a value of 0 will give you fat pancake
   legs.
 
@@ -62,21 +64,21 @@ Options are:
   setting this number to be nonzero. An extra leg length of 1 will put
   the virtual floor one meter below your real floor.
 
-- **Center Model**: When set to true, the model will be centered at 
-  x,y = 0,0 in blender, as well as moved to the floor. When off, 
+- **Center Model**: When set to true, the model will be centered at
+  x,y = 0,0 in blender, as well as moved to the floor. When off,
   the avatar is still moved to the floor z=0
-  
-- **Skip Main Rescale**: Skips the main portion of the rescale, keeping 
-  avatar proportions as they started. The plugin will remove any space 
-  between the bottom of the avatar and blender's z=0 plane, and scale 
+
+- **Skip Main Rescale**: Skips the main portion of the rescale, keeping
+  avatar proportions as they started. The plugin will remove any space
+  between the bottom of the avatar and blender's z=0 plane, and scale
   the height to match.
-  
-- **Skip move to floor**: Skips the step where the avatar is moved to the 
+
+- **Skip move to floor**: Skips the step where the avatar is moved to the
   floor. It still attempts to do the main rescale and scale the height.
 
-- **Skip Height Scaling**: The avatar will not be scaled to height, and 
-  will keep the height it had after resizing the legs and moving the 
-  avatar to the floor. 
+- **Skip Height Scaling**: The avatar will not be scaled to height, and
+  will keep the height it had after resizing the legs and moving the
+  avatar to the floor.
 
 
 ## Spreading Fingers
@@ -89,6 +91,5 @@ fingers in what is hopefully a more natural position
 
 ## Hip fix
 
-In some models it helps to shrink the hip bone. This is just a shortcut 
+In some models it helps to shrink the hip bone. This is just a shortcut
 to move the hip bone almost all the way to the spine.
-
