@@ -58,6 +58,11 @@ Options are:
   giving you spagetti legs, while a value of 0 will give you fat pancake
   legs.
 
+- **Thigh Percentage**: Out of the space between the top of the leg
+  and the foot, what percentage should be used by the thigh, vs the
+  calf. This helps get the knee in the right place when using full
+  body.
+
 - **Extra Leg Length**: In case no configuration where the avatar's feet
   touch the floor looks any good, you can have the avatar's feet and
   virtual floor be underneath your real floor by a certian amount by
@@ -66,7 +71,7 @@ Options are:
 
 - **Center Model**: When set to true, the model will be centered at
   x,y = 0,0 in blender, as well as moved to the floor. When off,
-  the avatar is still moved to the floor z=0
+  the avatar is still moved to the floor z=0.
 
 - **Skip Main Rescale**: Skips the main portion of the rescale, keeping
   avatar proportions as they started. The plugin will remove any space
