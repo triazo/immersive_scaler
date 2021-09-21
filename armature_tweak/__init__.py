@@ -18,7 +18,7 @@ bl_info = {
     "name": "Armature tuning",
     "category": "3D View",
     'author': 'triazo',
-    'version': (0, 1),
+    'version': (0, 2),
     'blender': (2, 80, 0),
     'location': 'View3D',
     # 'warning': '',
