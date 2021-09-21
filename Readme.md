@@ -47,6 +47,9 @@ Options are:
   arms. This works outside of the range zero to one, but will probably
   look weird.
 
+  This is the first option to tweak if you don't like how your avatar
+  looks.
+
 - **Arm Thickness**: When making the arms longer (or shorter), this
   determines how much the other axis should be scaled to match the
   length increase. A value of 1 will keep arm proportions exactly,
