@@ -101,3 +101,11 @@ fingers in what is hopefully a more natural position
 
 In some models it helps to shrink the hip bone. This is just a shortcut
 to move the hip bone almost all the way to the spine.
+
+
+## Contact
+
+If you have any questions, encounter an error, or just want to say hi,
+send me a ping on discord at triazo#9607.
+
+If you like this plugin and think it's useful, spread the word!
