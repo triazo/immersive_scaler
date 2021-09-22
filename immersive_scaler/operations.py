@@ -31,10 +31,18 @@ def get_armature(armature_name=None):
             return obj
     return None
 
+def obj_in_scene(obj):
+    for o in bpy.context.view_layer.objects:
+        if o is obj:
+            return True
+    return False
+
 def get_body_meshes(armature_name=None):
     arm = get_armature(armature_name)
     meshes = []
     for c in arm.children:
+        if not obj_in_scene(c):
+            continue
         if len(c.users_scene) == 0:
             continue
         if c.type == 'MESH':
@@ -391,6 +399,8 @@ def recursive_object_mode(obj):
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
     for c in obj.children:
+        if not obj_in_scene(c):
+            continue
         if len(c.users_scene) == 0:
             continue
         if 'scale' in dir(c):
@@ -404,6 +414,8 @@ def recursive_scale(obj):
     bpy.ops.object.transform_apply(scale = True, location = False, rotation = False, properties = False)
 
     for c in obj.children:
+        if not obj_in_scene(c):
+            continue
         if len(c.users_scene) == 0:
             continue
         if 'scale' in dir(c):
