@@ -584,6 +584,7 @@ class ArmatureShrinkHip(bpy.types.Operator):
         return {'FINISHED'}
 
 class UIGetCurrentHeight(bpy.types.Operator):
+    """Sets target height based on the current height"""
     bl_idname = "armature.get_avatar_height"
     bl_label = "Get Current Avatar Height"
     bl_options = {'REGISTER', 'UNDO'}
