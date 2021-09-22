@@ -61,16 +61,18 @@ Options are:
   giving you spagetti legs, while a value of 0 will give you fat pancake
   legs.
 
-- **Thigh Percentage**: Out of the space between the top of the leg
+- **Upper Leg Percentage**: Out of the space between the top of the leg
   and the foot, what percentage should be used by the thigh, vs the
   calf. This helps get the knee in the right place when using full
   body.
 
-- **Extra Leg Length**: In case no configuration where the avatar's feet
-  touch the floor looks any good, you can have the avatar's feet and
-  virtual floor be underneath your real floor by a certian amount by
-  setting this number to be nonzero. An extra leg length of 1 will put
-  the virtual floor one meter below your real floor.
+- **Extra Leg Length**: In case no configuration where the avatar's
+  feet touch the floor looks any good, you can have the avatar's feet
+  and virtual floor be underneath your real floor by a certian amount
+  by setting this number to be nonzero. An extra leg length of 1 will
+  put the virtual floor one meter below your real floor. This is
+  calculated before height scaling so results may be different from
+  run to run.
 
 - **Center Model**: When set to true, the model will be centered at
   x,y = 0,0 in blender, as well as moved to the floor. When off,
@@ -97,7 +99,7 @@ each other when fully open (only with finger tracking), which is an
 uncomfortable position for fingers, so this sets the rest pose of your
 fingers in what is hopefully a more natural position
 
-- **Spare thumb**: This option prevents the thumb bone from also being moved.
+- **Ignore thumb**: This option prevents the thumb bone from also being moved.
 
 ## Hip fix
 

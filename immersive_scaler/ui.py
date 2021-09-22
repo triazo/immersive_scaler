@@ -30,39 +30,39 @@ def set_properties():
     Scene.arm_to_legs = FloatProperty(
         name = "Leg/Arm Scaling",
         description = "What percentage of the needed rescaling should be done to the legs. Remaining scaling is done on the arms",
-        default = 0.55,
-        step = 0.01,
+        default = 55,
+        step = 1,
         precision = 3,
         soft_min = 0,
-        soft_max = 1,
-        subtype = 'FACTOR'
+        soft_max = 100,
+        subtype = 'PERCENTAGE'
     )
 
     Scene.arm_thickness = FloatProperty(
         name = "Arm Thickness",
         description = "How much arm thickness should be kept or added when scaling",
-        default = 0.5,
-        step = 0.01,
+        default = 50,
+        step = 1,
         precision = 3,
         soft_min = 0,
-        soft_max = 1,
-        subtype = 'FACTOR'
+        soft_max = 100,
+        subtype = 'PERCENTAGE'
     )
 
     Scene.leg_thickness = FloatProperty(
         name = "Leg Thickness",
         description = "How much leg thickness should be kept or added when scaling",
-        default = 0.5,
-        step = 0.01,
+        default = 50,
+        step = 1,
         precision = 3,
         soft_min = 0,
-        soft_max = 1,
-        subtype = 'FACTOR'
+        soft_max = 100,
+        subtype = 'PERCENTAGE'
     )
 
     Scene.extra_leg_length = FloatProperty(
         name = "Extra Leg Length",
-        description = "How far beneath the real floor should the model's legs go - how far below the real floor should the vrchat floor be. This is not idempotent.",
+        description = "How far beneath the real floor should the model's legs go - how far below the real floor should the vrchat floor be.",
         default = 0,
         step = 0.01,
         precision = 3,
@@ -72,14 +72,14 @@ def set_properties():
     )
 
     Scene.thigh_percentage = FloatProperty(
-        name = "Thigh Percentage",
-        description = "Percentage of the distance from the hips to the heel that should be taken up by the thigh",
-        default = 0.5294,
-        step = 0.01,
+        name = "Upper Leg Percent",
+        description = "Percentage of the distance from the hips to the heel that should be taken up by the upper leg",
+        default = 52.94,
+        step = 1,
         precision = 3,
-        soft_min = 0.1,
-        soft_max = 0.9,
-        subtype = 'FACTOR'
+        soft_min = 10,
+        soft_max = 90,
+        subtype = 'PERCENTAGE'
     )
 
     Scene.scale_hand = BoolProperty(
@@ -120,7 +120,7 @@ def set_properties():
 
     # Finger spreading
     Scene.spare_thumb = BoolProperty(
-        name = "Spare thumb",
+        name = "Ignore thumb",
         description = "Toggle if the thumb should be adjusted in addition to the body",
         default = True
         )
