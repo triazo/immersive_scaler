@@ -62,7 +62,7 @@ def set_properties():
 
     Scene.extra_leg_length = FloatProperty(
         name = "Extra Leg Length",
-        description = "How far beneath the real floor should the model's legs go - how far below the real floor should the vrchat floor be.",
+        description = "How far beneath the real floor should the model's legs go - how far below the real floor should the vrchat floor be. This is calculated before scaling so the",
         default = 0,
         step = 0.01,
         precision = 3,
@@ -125,6 +125,10 @@ def set_properties():
         default = True
         )
 
+    # UI options
+    bpy.types.Scene.imscale_show_customize = bpy.props.BoolProperty(name='Show customize panel', default=False)
+    bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
+
 
 class ImmersiveScalerMenu(bpy.types.Panel):
     bl_label = 'Immersive Scaler Menu'
@@ -142,34 +146,61 @@ class ImmersiveScalerMenu(bpy.types.Panel):
         col.label(text="Avatar Rescale")
 
         # Armature Rescale
-        row = col.row(align=True)
+        split = col.row(align=True)
+        row = split.row(align=True)
         row.prop(bpy.context.scene, 'target_height', expand=True)
+        row = split.row(align=True)
+        row.alignment = 'RIGHT'
+        row.operator("armature.get_avatar_height", text="", icon="EMPTY_SINGLE_ARROW")
+
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'arm_thickness', expand=True)
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'leg_thickness', expand=True)
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
+
         # row = col.row(align=True)
         # row.prop(bpy.context.scene, 'scale_hand', expand=True)
         # row = col.row(align=True)
         # row.prop(bpy.context.scene, 'scale_foot', expand=True)
 
+
+        # Customization options
+        row = col.row(align=False)
+        if scn.imscale_show_customize:
+            row.prop(scn, "imscale_show_customize", icon="DOWNARROW_HLT", text="", emboss=False)
+        else:
+            row.prop(scn, "imscale_show_customize", icon="RIGHTARROW", text="", emboss=False)
+        row.label(text="Customization")
+
+        if scn.imscale_show_customize:
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'arm_thickness', expand=True)
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'leg_thickness', expand=True)
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
+
+        #Debug/section toggle options
+        row = col.row(align=False)
+        if scn.imscale_show_debug:
+            row.prop(scn, "imscale_show_debug", icon="DOWNARROW_HLT", text="", emboss=False)
+        else:
+            row.prop(scn, "imscale_show_debug", icon="RIGHTARROW", text="", emboss=False)
+        row.label(text="Core functionality toggle")
+
+        if scn.imscale_show_debug:
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'debug_no_adjust', expand=True)
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'debug_no_floor', expand=True)
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'debug_no_scale', expand=True)
+
+        row = col.row(align=True)
+        row.label(text="-------------")
+
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'center_model', expand=True)
-        row = col.row(align=True)
-        col.label(text="Debug Options:")
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'debug_no_adjust', expand=True)
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'debug_no_floor', expand=True)
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'debug_no_scale', expand=True)
-
 
         row = col.row(align=True)
         row.scale_y=1.1
@@ -194,6 +225,8 @@ class ImmersiveScalerMenu(bpy.types.Panel):
         row.operator("armature.shrink_hips", text="Shrink Hip bone")
 
         return None
+
+
 
 
 def ui_register():

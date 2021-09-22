@@ -583,6 +583,16 @@ class ArmatureShrinkHip(bpy.types.Operator):
         shrink_hips()
         return {'FINISHED'}
 
+class UIGetCurrentHeight(bpy.types.Operator):
+    bl_idname = "armature.get_avatar_height"
+    bl_label = "Get Current Avatar Height"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        height = get_highest_point()
+        context.scene.target_height = height
+        return {'FINISHED'}
+
 
 def ops_register():
     print("Registering Armature tuning add-on")
@@ -595,6 +605,9 @@ def ops_register():
     bpy.utils.register_class(ArmatureShrinkHip)
     make_annotations(ArmatureShrinkHip)
 
+    bpy.utils.register_class(UIGetCurrentHeight)
+    make_annotations(UIGetCurrentHeight)
+
     print("Registering Armature tuning add-on")
 
 def ops_unregister():
@@ -602,6 +615,7 @@ def ops_unregister():
     bpy.utils.unregister_class(ArmatureRescale)
     bpy.utils.unregister_class(ArmatureSpreadFingers)
     bpy.utils.unregister_class(ArmatureShrinkHip)
+    bpy.utils.unregister_class(UIGetCurrentHeight)
     print("Unregistering Armature tuning add-on")
 
 if __name__ == "__main__":
