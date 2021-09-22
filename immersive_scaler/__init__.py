@@ -5,8 +5,8 @@
 import importlib
 importlib.invalidate_caches()
 
-import armature_tweak.operations as atops
-import armature_tweak.ui as atui
+import immersive_scaler.operations as atops
+import immersive_scaler.ui as atui
 
 # from .operations import ops_register
 # from .operations import ops_unregister
@@ -15,7 +15,7 @@ import armature_tweak.ui as atui
 
 
 bl_info = {
-    "name": "Armature tuning",
+    "name": "Imersive Scaler",
     "category": "3D View",
     'author': 'triazo',
     'version': (0, 2),

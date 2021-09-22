@@ -20,6 +20,7 @@ def get_objects():
     return bpy.context.scene.objects
 
 
+
 def get_armature(armature_name=None):
     if not armature_name:
         armature_name = bpy.context.scene.armature
@@ -63,6 +64,30 @@ def rehide_obj(obj):
 def hide_reset():
     del unhide_obj.hide_states
 
+
+bone_names = {
+    "right_arm": ["Right arm", "Arm.R", "R_Arm", "r_arm"],
+    "right_shoulder": ["Right shoulder", "Shoulder.R", "R_Shoulder"],
+    "right_elbow": ["Right elbow", "Elbow.R", "R_elbow", "Elbow.r", "r_elbow", "R_Elbow"],
+    "right_wrist": ["Right wrist", "Wrist.R", "R_wrist", "Wrist.r", "r_wrist", "R_Wrist"],
+    "left_arm": ["Left arm", "Arm.R", "R_Arm", "r_arm"],
+    "left_shoulder": ["Left shoulder", "Shoulder.L", "L_Shoulder"],
+    "left_elbow": ["Left elbow", "Elbow.L", "L_elbow", "Elbow.l", "l_elbow", "L_Elbow"],
+    "left_wrist": ["Left wrist", "Wrist.L", "L_wrist", "Wrist.l", "l_wrist", "L_Wrist"],
+    "left_leg": ["Left leg", "Leg.L", "L_Leg", "L_leg", "leg.l"],
+    "right_leg": ["Right leg", "Leg.R", "R_Leg", "R_leg", "leg.r"],
+    "left_knee": ["Left knee", "Knee.L", "L_Knee", "L_knee", "knee.l"],
+    "right_knee": ["Right knee", "Knee.R", "R_Knee", "R_knee", "knee.r"],
+    "left_ankle": ["Left ankle", "Ankle.L", "L_Ankle", "L_ankle", "ankle.l"],
+    "right_ankle": ["Right ankle", "Ankle.R", "R_Ankle", "R_ankle", "ankle.r"]
+}
+
+def get_bone(name, arm):
+    name_list = bone_names[name]
+    for n in name_list:
+        if n in arm.pose.bones:
+            return arm.pose.bones[n]
+    return arm.pose.bones[name]
 
 def get_lowest_point():
     meshes = get_body_meshes()
@@ -114,9 +139,9 @@ def head_to_hand(obj):
     # Since arms might not be flat, add the length of the arm to the x
     # coordinate of the shoulder
     headpos = obj.pose.bones['Head'].head
-    shoulder = obj.pose.bones['Right arm'].head
-    arm_length = (obj.pose.bones['Right arm'].head - obj.pose.bones['Right wrist'].head).length
-    arm_length = (obj.pose.bones['Right arm'].length + obj.pose.bones['Right elbow'].length)
+    shoulder = get_bone("right_arm", obj).head
+    arm_length = (get_bone("right_arm",obj).head - get_bone("right_wrist", obj).head).length
+    arm_length = (get_bone("right_arm",obj).length + get_bone("right_elbow", obj).length)
     t_hand_pos = mathutils.Vector((shoulder[0] - arm_length, shoulder[1], shoulder[2]))
     bpy.context.scene.cursor.location = t_hand_pos
     return (headpos - t_hand_pos).length
@@ -130,8 +155,8 @@ def calculate_arm_rescaling(obj, head_arm_change):
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode='POSE', toggle = False)
 
-    rhandpos = obj.pose.bones['Right wrist'].head
-    rarmpos = obj.pose.bones['Right arm'].head
+    rhandpos = get_bone("right_wrist", obj).head
+    rarmpos = get_bone("right_arm", obj).head
     headpos = obj.pose.bones['Head'].head
 
     # Reset t-pose to whatever it was before since we have the data we
@@ -139,6 +164,7 @@ def calculate_arm_rescaling(obj, head_arm_change):
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
 
     total_length = head_to_hand(obj)
+    print("Arm length is {}".format(total_length))
     arm_length = (rarmpos - rhandpos).length
     neck_length = abs((headpos[2] - rarmpos[2]))
 
@@ -192,14 +218,14 @@ def get_eye_height(obj):
 
 def get_leg_length(arm):
     # Assumes exact symmetry between right and left legs
-    return arm.pose.bones['Left leg'].head[2] - get_lowest_point()
+    return get_bone("left_leg", arm).head[2] - get_lowest_point()
 
 def get_leg_proportions(arm):
     # Gets the relative lengths of each portion of the leg
     l = [
-        (arm.pose.bones['Left leg'].head[2] + arm.pose.bones['Right leg'].head[2]) / 2,
-        (arm.pose.bones['Left knee'].head[2] + arm.pose.bones['Right knee'].head[2]) / 2,
-        (arm.pose.bones['Left ankle'].head[2] + arm.pose.bones['Right ankle'].head[2]) / 2,
+        (get_bone('left_leg', arm).head[2] + get_bone('right_leg', arm).head[2]) / 2,
+        (get_bone('left_knee', arm).head[2] + get_bone('right_knee', arm).head[2]) / 2,
+        (get_bone('left_ankle', arm).head[2] + get_bone('right_ankle', arm).head[2]) / 2,
         get_lowest_point()
     ]
 
@@ -242,20 +268,21 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
     final_foot_scale = (foot_portion / starting_portions[2]) * leg_scale_ratio
 
     # Disable scaling from parent for bones
-    scale_bones = ["Left knee", "Right knee", "Left ankle", "Right ankle"]
+    scale_bones = ["left_knee", "right_knee", "left_ankle", "right_ankle"]
     saved_bone_inherit_scales = {}
     for b in scale_bones:
-        saved_bone_inherit_scales[b] = arm.data.bones[b].inherit_scale
-        arm.data.bones[b].inherit_scale = "NONE"
+        bone = get_bone(b, arm)
+        saved_bone_inherit_scales[b] = arm.data.bones[bone.name].inherit_scale
+        arm.data.bones[bone.name].inherit_scale = "NONE"
 
     print("Calculated final scales: thigh {} calf {} foot {}".format(final_thigh_scale, final_calf_scale, final_foot_scale))
 
-    for leg in ["Left leg", "Right leg"]:
-        arm.pose.bones[leg].scale = (leg_thickness, final_thigh_scale, leg_thickness)
-    for knee in ["Left knee", "Right knee"]:
-        arm.pose.bones[knee].scale = (leg_thickness, final_calf_scale, leg_thickness)
-    for foot in ["Left ankle", "Right ankle"]:
-        arm.pose.bones[foot].scale = (final_foot_scale, final_foot_scale, final_foot_scale)
+    for leg in [get_bone("left_leg", arm), get_bone("right_leg", arm)]:
+        leg.scale = (leg_thickness, final_thigh_scale, leg_thickness)
+    for knee in [get_bone("left_knee", arm), get_bone("right_knee", arm)]:
+        knee.scale = (leg_thickness, final_calf_scale, leg_thickness)
+    for foot in [get_bone("left_ankle", arm), get_bone("right_ankle", arm)]:
+        foot.scale = (final_foot_scale, final_foot_scale, final_foot_scale)
 
     result_final_points, result_total_legs = get_leg_proportions(arm)
     print("Implemented leg portions: {}".format(result_final_points))
@@ -295,13 +322,20 @@ def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, 
 
     scale_foot = False
     scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage)
-    for a in ["Left arm", "Right arm"]:
-        arm.pose.bones[a].scale = (arm_thickness, arm_scale_ratio, arm_thickness)
-    if not scale_hand:
-        for hand in ["Left wrist", "Right wrist"]:
-            arm.pose.bones[hand].scale = (1 / arm_thickness, 1 / arm_scale_ratio, 1 / arm_thickness)
 
-    result_final_points, result_total_legs = get_leg_proportions(arm)
+    # This kept getting me - make sure arms are set to inherit scale
+    for b in ["left_elbow", "right_elbow", "left_wrist", "right_wrist"]:
+        bone_name = get_bone(b, arm).name
+        arm.data.bones[bone_name].inherit_scale = "FULL"
+
+    for armbone in [get_bone("left_arm", arm), get_bone("right_arm", arm)]:
+        armbone.scale = (arm_thickness, arm_scale_ratio, arm_thickness)
+
+    if not scale_hand:
+        for hand in [get_bone("left_wrist", arm), get_bone("right_wrist", arm)]:
+            hand.scale = (1 / arm_thickness, 1 / arm_scale_ratio, 1 / arm_thickness)
+
+            result_final_points, result_total_legs = get_leg_proportions(arm)
     print("Implemented leg portions: {}".format(result_final_points))
     try:
         bpy.ops.cats_manual.pose_to_rest()
@@ -445,8 +479,7 @@ def point_bone(bone, point):
 def spread_fingers(spare_thumb):
     obj = get_armature()
     bpy.ops.cats_manual.start_pose_mode()
-    for hand_name in ['Right wrist', 'Left wrist']:
-        hand = obj.pose.bones[hand_name]
+    for hand in [get_bone("right_wrist", obj), get_bone("left_wrist", obj)]:
         for finger in hand.children:
             if "thumb" in finger.name.lower() and spare_thumb:
                 continue
@@ -461,7 +494,9 @@ def shrink_hips():
     arm.select_set(True)
     bpy.ops.object.mode_set(mode='EDIT', toggle = False)
 
-    leg_start = (arm.data.edit_bones['Left leg'].head[2] +arm.data.edit_bones['Right leg'].head[2]) / 2
+    left_leg_name = get_bone('left_leg', arm).name
+    right_leg_name = get_bone('right_leg', arm).name
+    leg_start = (arm.data.edit_bones[left_leg_name].head[2] +arm.data.edit_bones[right_leg_name].head[2]) / 2
     spine_start = arm.data.edit_bones['Spine'].head[2]
 
     # Make the hip tiny - 90 of the way between the start of the legs
@@ -509,7 +544,7 @@ class ArmatureRescale(bpy.types.Operator):
 
 
 class ArmatureSpreadFingers(bpy.types.Operator):
-    """Spreads the fingers on a humanoiod avatar"""
+    """Spreads the fingers on a humanoid avatar"""
     bl_idname = "armature.spreadfingers"
     bl_label = "Spread Fingers"
     bl_options = {'REGISTER', 'UNDO'}

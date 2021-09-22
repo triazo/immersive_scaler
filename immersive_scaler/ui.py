@@ -35,7 +35,7 @@ def set_properties():
         precision = 3,
         soft_min = 0,
         soft_max = 1,
-        subtype = 'PERCENTAGE'
+        subtype = 'FACTOR'
     )
 
     Scene.arm_thickness = FloatProperty(
@@ -46,7 +46,7 @@ def set_properties():
         precision = 3,
         soft_min = 0,
         soft_max = 1,
-        subtype = 'PERCENTAGE'
+        subtype = 'FACTOR'
     )
 
     Scene.leg_thickness = FloatProperty(
@@ -57,7 +57,7 @@ def set_properties():
         precision = 3,
         soft_min = 0,
         soft_max = 1,
-        subtype = 'PERCENTAGE'
+        subtype = 'FACTOR'
     )
 
     Scene.extra_leg_length = FloatProperty(
@@ -79,7 +79,7 @@ def set_properties():
         precision = 3,
         soft_min = 0.1,
         soft_max = 0.9,
-        subtype = 'PERCENTAGE'
+        subtype = 'FACTOR'
     )
 
     Scene.scale_hand = BoolProperty(
