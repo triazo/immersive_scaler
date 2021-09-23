@@ -80,7 +80,7 @@ bone_names = {
     "right_wrist": ["Right wrist", "Wrist.R", "R_wrist", "Wrist.r", "r_wrist", "R_Wrist", "Hand_R"],
     "right_leg": ["Right leg", "Leg.R", "R_Leg", "R_leg", "leg.r", "UpperLeg.R", "Leg_R", "Thigh_R", "UpperLeg_R"],
     "right_knee": ["Right knee", "Knee.R", "R_Knee", "R_knee", "knee.r", "LowerLeg.R", "Calf_R", "LowerLeg_R"],
-    "right_ankle": ["Right ankle", "Ankle.R", "R_Ankle", "R_ankle", "ankle.r", "Right Foot", "Foot.R", "Ankle_R"]
+    "right_ankle": ["Right ankle", "Ankle.R", "R_Ankle", "R_ankle", "ankle.r", "Right Foot", "Foot.R", "Ankle_R"],
 
     "left_shoulder": ["Left shoulder", "Shoulder.L", "L_Shoulder", "Shoulder_L"],
     "left_arm": ["Left arm", "Arm.L", "L_Arm", "l_arm", "UpperArm.L", "Arm_L", "LeftUpperArm", "UpperArm_L"],
@@ -88,7 +88,7 @@ bone_names = {
     "left_wrist": ["Left wrist", "Wrist.L", "L_wrist", "Wrist.l", "l_wrist", "L_Wrist", "Hand_L"],
     "left_leg": ["Left leg", "Leg.L", "L_Leg", "L_leg", "leg.l", "UpperLeg.L", "Leg_L", "Thigh_L", "UpperLeg_L"],
     "left_knee": ["Left knee", "Knee.L", "L_Knee", "L_knee", "knee.l", "LowerLeg.L", "Calf_L", "LowerLeg_L"],
-    "left_ankle": ["Left ankle", "Ankle.L", "L_Ankle", "L_ankle", "ankle.l", "Left Foot", "Foot.L", "Ankle_L"],
+    "left_ankle": ["Left ankle", "Ankle.L", "L_Ankle", "L_ankle", "ankle.l", "Left Foot", "Foot.L", "Ankle_L"]
 }
 
 def get_bone(name, arm):
