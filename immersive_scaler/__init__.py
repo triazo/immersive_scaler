@@ -18,10 +18,9 @@ bl_info = {
     "name": "Imersive Scaler",
     "category": "3D View",
     'author': 'triazo',
-    'version': (0, 2, 3),
+    'version': (0, 2, 4),
     'blender': (2, 80, 0),
     'location': 'View3D',
-    # 'warning': '',
 }
 
 def register():
