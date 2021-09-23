@@ -74,7 +74,7 @@ def set_properties():
     Scene.thigh_percentage = FloatProperty(
         name = "Upper Leg Percent",
         description = "Percentage of the distance from the hips to the heel that should be taken up by the upper leg",
-        default = 52.94,
+        default = 53,
         step = 1,
         precision = 3,
         soft_min = 10,

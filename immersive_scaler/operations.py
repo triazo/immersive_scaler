@@ -74,20 +74,20 @@ def hide_reset():
 
 
 bone_names = {
-    "right_arm": ["Right arm", "Arm.R", "R_Arm", "r_arm"],
+    "right_arm": ["Right arm", "Arm.R", "R_Arm", "r_arm", "UpperArm.R", "Arm_R", "RightUpperArm"],
     "right_shoulder": ["Right shoulder", "Shoulder.R", "R_Shoulder"],
-    "right_elbow": ["Right elbow", "Elbow.R", "R_elbow", "Elbow.r", "r_elbow", "R_Elbow"],
+    "right_elbow": ["Right elbow", "Elbow.R", "R_elbow", "Elbow.r", "r_elbow", "R_Elbow", "LowerArm.R", "RightLowerArm"],
     "right_wrist": ["Right wrist", "Wrist.R", "R_wrist", "Wrist.r", "r_wrist", "R_Wrist"],
-    "left_arm": ["Left arm", "Arm.R", "R_Arm", "r_arm"],
+    "left_arm": ["Left arm", "Arm.L", "L_Arm", "r_arm", "UpperArm.L", "Arm_L", "LeftUpperArm"],
     "left_shoulder": ["Left shoulder", "Shoulder.L", "L_Shoulder"],
-    "left_elbow": ["Left elbow", "Elbow.L", "L_elbow", "Elbow.l", "l_elbow", "L_Elbow"],
+    "left_elbow": ["Left elbow", "Elbow.L", "L_elbow", "Elbow.l", "l_elbow", "L_Elbow", "LowerArm.L", "LeftLowerArm"],
     "left_wrist": ["Left wrist", "Wrist.L", "L_wrist", "Wrist.l", "l_wrist", "L_Wrist"],
-    "left_leg": ["Left leg", "Leg.L", "L_Leg", "L_leg", "leg.l"],
-    "right_leg": ["Right leg", "Leg.R", "R_Leg", "R_leg", "leg.r"],
-    "left_knee": ["Left knee", "Knee.L", "L_Knee", "L_knee", "knee.l"],
-    "right_knee": ["Right knee", "Knee.R", "R_Knee", "R_knee", "knee.r"],
-    "left_ankle": ["Left ankle", "Ankle.L", "L_Ankle", "L_ankle", "ankle.l"],
-    "right_ankle": ["Right ankle", "Ankle.R", "R_Ankle", "R_ankle", "ankle.r"]
+    "left_leg": ["Left leg", "Leg.L", "L_Leg", "L_leg", "leg.l", "UpperLeg.L", "Leg_L"],
+    "right_leg": ["Right leg", "Leg.R", "R_Leg", "R_leg", "leg.r", "UpperLeg.R", "Leg_R"],
+    "left_knee": ["Left knee", "Knee.L", "L_Knee", "L_knee", "knee.l", "LowerLeg.L"],
+    "right_knee": ["Right knee", "Knee.R", "R_Knee", "R_knee", "knee.r", "UpperLeg.R"],
+    "left_ankle": ["Left ankle", "Ankle.L", "L_Ankle", "L_ankle", "ankle.l", "Left Foot", "Foot.L"],
+    "right_ankle": ["Right ankle", "Ankle.R", "R_Ankle", "R_ankle", "ankle.r", "Right Foot", "Foot.R"]
 }
 
 def get_bone(name, arm):
