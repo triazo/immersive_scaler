@@ -75,7 +75,7 @@ def hide_reset():
 
 bone_names = {
     "right_shoulder": ["Right shoulder", "Shoulder.R", "R_Shoulder", "Shoulder_R"],
-    "right_arm": ["Right arm", "Arm.R", "R_Arm", "r_arm", "UpperArm.R", "Arm_R", "RightUpperArm", "UppeArm_R"],
+    "right_arm": ["Right arm", "Arm.R", "R_Arm", "r_arm", "UpperArm.R", "Arm_R", "RightUpperArm", "UpperArm_R"],
     "right_elbow": ["Right elbow", "Elbow.R", "R_elbow", "Elbow.r", "r_elbow", "R_Elbow", "LowerArm.R", "RightLowerArm", "LowerArm_R"],
     "right_wrist": ["Right wrist", "Wrist.R", "R_wrist", "Wrist.r", "r_wrist", "R_Wrist", "Hand_R"],
     "right_leg": ["Right leg", "Leg.R", "R_Leg", "R_leg", "leg.r", "UpperLeg.R", "Leg_R", "Thigh_R", "UpperLeg_R"],
