@@ -21,7 +21,28 @@ One click in blender later:
 https://user-images.githubusercontent.com/6687043/134242292-bbbb7803-377b-440f-8d76-ade58c2176ac.mp4
 
 
+## Installation
 
+Installation is the same as most other blender plugins.
+
+Go to the
+[releases](https://github.com/triazo/immersive_scaler/releases) page,
+and download the latest `.zip` file. Then, in Blender, go to
+Edit->Preferences, and select 'Add-ons'. On the top, hit 'Install',
+navigate to the downloaded `.zip` file, select, and install it.
+
+On the 'Add-ons' page in preferences, scroll down to '3D View:
+Immersive scaler' and select the check box. A tab named 'IMScale'
+should now appear on the 3d view toolbar, on the right hand side of
+the view.
+
+## Upgrading
+
+While sometims an upgrade will work simply by repeating the
+installation process with the newer version, often a full blender
+restart is required. Disable the plugin in the Add-ons tab in the
+preferences window, install the new version, restart blender, then
+re-enable it.
 
 ## Usage
 
@@ -37,8 +58,9 @@ this), and hit the 'Rescale Armature' button. Tweak options as necessary.
 
 Options are:
 
-- **Target Height**: The in game height of an avatar. This includes extra
-  leg length.
+- **Target Height**: The in game height of an avatar. This includes
+  extra leg length. The button on the right retrieves the current
+  height and sets the target height parameter to match.
 
 - **Leg/Arm Scaling**: If rescaling needs to be done, how much should the
   legs be changed (shortened, most of the time), and how much should
@@ -74,6 +96,12 @@ Options are:
   calculated before height scaling so results may be different from
   run to run.
 
+- **Scale to Eyes**: This toggle affects the 'Target Height'
+  behaivor. Normally it will scale the model based on the height of
+  the highest vertex, but when this toggle is set, it will scale it
+  based on the eye height instead. When this is checked, the button to
+  get the current height will also respond based on eye height.
+
 - **Center Model**: When set to true, the model will be centered at
   x,y = 0,0 in blender, as well as moved to the floor. When off,
   the avatar is still moved to the floor z=0.
@@ -98,6 +126,13 @@ users to spread fingers. Many armatures have fingers in parallel with
 each other when fully open (only with finger tracking), which is an
 uncomfortable position for fingers, so this sets the rest pose of your
 fingers in what is hopefully a more natural position
+
+- **Spread Factor**: This determines how much the fingers will be
+  spread by. A spread factor of 1 is the default behavior and will
+  point the finger bones directly away from the head of the wrist
+  bone. Higher values will spread the fingers more, and lower values
+  will spread the fingers less. A factor of 0 will not move the
+  fingers at all.
 
 - **Ignore thumb**: This option prevents the thumb bone from also being moved.
 

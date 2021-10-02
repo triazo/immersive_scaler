@@ -15,10 +15,10 @@ import immersive_scaler.ui as atui
 
 
 bl_info = {
-    "name": "Imersive Scaler",
+    "name": "Immersive Scaler",
     "category": "3D View",
     'author': 'triazo',
-    'version': (0, 2, 4),
+    'version': (0, 2, 5),
     'blender': (2, 80, 0),
     'location': 'View3D',
 }

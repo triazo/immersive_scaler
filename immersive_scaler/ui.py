@@ -18,7 +18,7 @@ def set_properties():
 
     Scene.target_height = FloatProperty(
         name = "Target Height",
-        description = "Desired height of the highest vertex in the model",
+        description = "Desired height of the highest vertex in the model. If Scale to Eyes is set, Desired Eye Height",
         default = 1.61,
         step = 0.01,
         precision = 3,
@@ -118,6 +118,12 @@ def set_properties():
         default = False
         )
 
+    Scene.scale_eyes = BoolProperty(
+        name = "Scale to Eyes",
+        description = "Target height targets eyes instead of the highest vertex",
+        default = False
+        )
+
     # Finger spreading
     Scene.spare_thumb = BoolProperty(
         name = "Ignore thumb",
@@ -125,8 +131,20 @@ def set_properties():
         default = True
         )
 
+    Scene.spread_factor = FloatProperty(
+        name = "Spread Factor",
+        description = "Value showing how much fingers should be rotated. 1 is default, and will cause the finger bone to point directly away from the head of the wrist bone.",
+        default = 1,
+        step = .1,
+        precision = 2,
+        soft_min = 0,
+        soft_max = 2,
+        subtype = 'FACTOR'
+    )
+
     # UI options
     bpy.types.Scene.imscale_show_customize = bpy.props.BoolProperty(name='Show customize panel', default=False)
+    bpy.types.Scene.imscale_show_sf_custom = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
 
 
@@ -179,8 +197,11 @@ class ImmersiveScalerMenu(bpy.types.Panel):
             row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
             row = col.row(align=True)
             row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'scale_eyes', expand=True)
 
-        #Debug/section toggle options
+
+        # Debug/section toggle options
         row = col.row(align=False)
         if scn.imscale_show_debug:
             row.prop(scn, "imscale_show_debug", icon="DOWNARROW_HLT", text="", emboss=False)
@@ -210,10 +231,24 @@ class ImmersiveScalerMenu(bpy.types.Panel):
         box = layout.box()
         col=box.column(align=True)
         col.label(text="Finger Spreading")
+
+        row = col.row(align=False)
+        if scn.imscale_show_sf_custom:
+            row.prop(scn, "imscale_show_sf_custom", icon="DOWNARROW_HLT", text="", emboss=False)
+        else:
+            row.prop(scn, "imscale_show_sf_custom", icon="RIGHTARROW", text="", emboss=False)
+        row.label(text="Customization")
+
+        if scn.imscale_show_sf_custom:
+            row = col.row(align=True)
+            row.prop(context.scene, 'spare_thumb')
+            row = col.row(align=False)
+            row.prop(context.scene, 'spread_factor')
+
         row = col.row(align=True)
-        row.prop(context.scene, 'spare_thumb')
+        row.label(text="-------------")
         row.scale_y=1.1
-        row = col.row(align=True)
+        row = col.row(align=False)
         row.operator("armature.spreadfingers", text="Spread Fingers")
 
         # Shrink Hip

@@ -423,10 +423,12 @@ def recursive_scale(obj):
             recursive_scale(c)
 
 
-def scale_to_height(new_height):
+def scale_to_height(new_height, scale_eyes):
     obj = get_armature()
     unhide_obj(obj)
     old_height = get_highest_point() - get_lowest_point()
+    if scale_eyes:
+        old_height = get_eye_height(obj) - get_lowest_point()
 
     print("Old height is %f"%old_height)
 
@@ -448,7 +450,7 @@ def center_model():
     arm.location = (0,0,0)
 
 
-def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage):
+def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, scale_eyes):
     s = bpy.context.scene
 
 
@@ -461,14 +463,14 @@ def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_le
     print("Final Implemented leg portions: {}".format(result_final_points))
 
     if not s.debug_no_scale:
-        scale_to_height(new_height)
+        scale_to_height(new_height, scale_eyes)
 
     if s.center_model:
         center_model()
 
     bpy.ops.object.select_all(action='DESELECT')
 
-def point_bone(bone, point):
+def point_bone(bone, point, spread_factor):
     v1 = (bone.tail - bone.head).normalized()
     v2 = (bone.head - point).normalized()
 
@@ -483,20 +485,32 @@ def point_bone(bone, point):
     #  B is the bone's global rotation
     #  B^-1 is the inverse of the bone's rotation
     rotation_quat_pose = v1.rotation_difference(v2)
-    bm = bone.matrix.to_quaternion()
-    bm.rotate(rotation_quat_pose)
-    bm.rotate(bone.matrix.inverted())
 
-    bone.rotation_quaternion = bm
+    newbm = bone.matrix.to_quaternion()
 
-def spread_fingers(spare_thumb):
+    # Run the actual rotation twice to give us more range on the
+    # rotation. The slerp should exactly remove one of these by
+    # default, basically letting us extrapolate a bit.
+    newbm.rotate(rotation_quat_pose)
+    newbm.rotate(rotation_quat_pose)
+
+    newbm.rotate(bone.matrix.inverted())
+
+    oldbm = bone.matrix.to_quaternion()
+    oldbm.rotate(bone.matrix.inverted())
+
+    finalbm = oldbm.slerp(newbm, spread_factor / 2)
+
+    bone.rotation_quaternion = finalbm
+
+def spread_fingers(spare_thumb, spread_factor):
     obj = get_armature()
     bpy.ops.cats_manual.start_pose_mode()
     for hand in [get_bone("right_wrist", obj), get_bone("left_wrist", obj)]:
         for finger in hand.children:
             if "thumb" in finger.name.lower() and spare_thumb:
                 continue
-            point_bone(finger, hand.head)
+            point_bone(finger, hand.head, spread_factor)
     bpy.ops.cats_manual.pose_to_rest()
     bpy.ops.object.select_all(action='DESELECT')
 
@@ -537,10 +551,11 @@ class ArmatureRescale(bpy.types.Operator):
     extra_leg_length: bpy.types.Scene.extra_leg_length
     scale_hand: bpy.types.Scene.scale_hand
     thigh_percentage: bpy.types.Scene.thigh_percentage
+    scale_eyes: bpy.types.Scene.scale_eyes
 
     def execute(self, context):
 
-        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0)
+        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.scale_eyes)
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -552,6 +567,7 @@ class ArmatureRescale(bpy.types.Operator):
         self.extra_leg_length = s.extra_leg_length
         self.scale_hand = s.scale_hand
         self.thigh_percentage = s.thigh_percentage
+        self.scale_eyes = s.scale_eyes
 
         return self.execute(context)
 
@@ -563,14 +579,16 @@ class ArmatureSpreadFingers(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     spare_thumb: bpy.types.Scene.spare_thumb
+    spread_factor: bpy.types.Scene.spread_factor
 
     def execute(self, context):
-        spread_fingers(self.spare_thumb)
+        spread_fingers(self.spare_thumb, self.spread_factor)
         return {'FINISHED'}
 
     def invoke(self, context, event):
         s = context.scene
         self.spare_thumb = s.spare_thumb
+        self.spread_factor = s.spread_factor
 
         return self.execute(context)
 
@@ -591,7 +609,11 @@ class UIGetCurrentHeight(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        height = get_highest_point()
+        height = 1.5 # Placeholder
+        if context.scene.scale_eyes:
+            height = get_eye_height(get_armature())
+        else:
+            height = get_highest_point()
         context.scene.target_height = height
         return {'FINISHED'}
 
