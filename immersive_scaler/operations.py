@@ -101,25 +101,32 @@ def get_bone(name, arm):
 def get_lowest_point():
     meshes = get_body_meshes()
     lowest_vertex = meshes[0].data.vertices[0]
+    lowest_vertex_z = 999999
     for o in meshes:
         mesh = o.data
+        wm = o.matrix_world
         for v in mesh.vertices:
-            if v.co[2] < lowest_vertex.co[2]:
+            wco = wm @ v.co
+            if wco[2] < lowest_vertex_z:
                 lowest_vertex = v
-    return(lowest_vertex.co[2])
+                lowest_vertex_z = wco[2]
+    return(lowest_vertex_z)
 
 
 def get_highest_point():
     # Almost the same as get_lowest_point for obvious reasons
     meshes = get_body_meshes()
     highest_vertex = meshes[0].data.vertices[0]
+    highest_vertex_z = 0
     for o in meshes:
         mesh = o.data
+        wm = o.matrix_world
         for v in mesh.vertices:
-            if v.co[2] > highest_vertex.co[2]:
+            wco = wm @ v.co
+            if wco[2] > highest_vertex_z:
                 highest_vertex = v
-
-    return(highest_vertex.co[2])
+                highest_vertex_z = wco[2]
+    return(highest_vertex_z)
 
 def get_height():
     return get_highest_point() - get_lowest_point()
@@ -204,8 +211,8 @@ def calculate_arm_rescaling(obj, head_arm_change):
 def get_eye_height(obj):
     pose_bones = obj.pose.bones
 
-    l_eye_list = ['Eye_L', 'Eye_l', 'LeftEye', 'EyeLeft', 'lefteye', 'eyeleft', 'eye_l', 'Lefteye', 'leftEye']
-    r_eye_list = ['Eye_R', 'Eye_r', 'RightEye', 'EyeRight', 'righteye', 'eyeright', 'eye_r', 'Righteye', 'rightEye']
+    l_eye_list = ['Eye_L', 'Eye_l', 'LeftEye', 'EyeLeft', 'lefteye', 'eyeleft', 'eye_l', 'Lefteye', 'leftEye', 'LeftEye_001']
+    r_eye_list = ['Eye_R', 'Eye_r', 'RightEye', 'EyeRight', 'righteye', 'eyeright', 'eye_r', 'Righteye', 'rightEye', 'RightEye_001']
 
     left_eye = None
     right_eye = None
@@ -239,7 +246,7 @@ def get_leg_proportions(arm):
     ]
 
     total = l[0] - l[3]
-    nl = list([1 - i/total for i in l])
+    nl = list([1 - (i-l[3])/total for i in l])
     return nl, total
 
 def bone_direction(bone):
@@ -263,6 +270,8 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
     foot_portion = ((1 - leg_points[2]) * leg_thickness / leg_scale_ratio)
     if scale_foot:
         foot_portion = (1 - leg_points[2]) * leg_thickness
+    print("Foot portion: {}".format(foot_portion))
+    print("Leg thickness: {}, leg_scale_ratio: {}, leg_points: {}".format(leg_thickness, leg_scale_ratio, leg_points))
 
     leg_portion = 1 - foot_portion
 
@@ -282,8 +291,10 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
     for b in scale_bones:
         bone = get_bone(b, arm)
         saved_bone_inherit_scales[b] = arm.data.bones[bone.name].inherit_scale
+
         arm.data.bones[bone.name].inherit_scale = "NONE"
 
+    print(final_foot_scale)
     print("Calculated final scales: thigh {} calf {} foot {}".format(final_thigh_scale, final_calf_scale, final_foot_scale))
 
     for leg in [get_bone("left_leg", arm), get_bone("right_leg", arm)]:
