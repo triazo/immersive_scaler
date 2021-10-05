@@ -19,7 +19,7 @@ bl_info = {
     "category": "3D View",
     'author': 'triazo',
     'version': (0, 2, 5),
-    'blender': (2, 80, 0),
+    'blender': (2, 81, 0),
     'location': 'View3D',
 }
 
