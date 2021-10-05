@@ -18,7 +18,7 @@ bl_info = {
     "name": "Immersive Scaler",
     "category": "3D View",
     'author': 'triazo',
-    'version': (0, 2, 5),
+    'version': (0, 2, 6),
     'blender': (2, 81, 0),
     'location': 'View3D',
 }
