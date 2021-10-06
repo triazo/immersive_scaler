@@ -97,7 +97,7 @@ Options are:
   run to run.
 
 - **Scale to Eyes**: This toggle affects the 'Target Height'
-  behaivor. Normally it will scale the model based on the height of
+  behaviour. Normally it will scale the model based on the height of
   the highest vertex, but when this toggle is set, it will scale it
   based on the eye height instead. When this is checked, the button to
   get the current height will also respond based on eye height.
