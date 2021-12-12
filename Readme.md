@@ -23,7 +23,8 @@ https://user-images.githubusercontent.com/6687043/134242292-bbbb7803-377b-440f-8
 
 ## Installation
 
-Installation is the same as most other blender plugins. Supports Blender >=2.81.
+Installation is the same as most other blender plugins. Supports
+Blender >=2.81, including 3.0.
 
 Go to the
 [releases](https://github.com/triazo/immersive_scaler/releases) page,

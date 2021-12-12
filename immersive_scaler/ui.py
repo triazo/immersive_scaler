@@ -15,7 +15,6 @@ def make_annotations(cls):
     return cls
 
 def set_properties():
-
     Scene.target_height = FloatProperty(
         name = "Target Height",
         description = "Desired height of the highest vertex in the model. If Scale to Eyes is set, Desired Eye Height",
@@ -146,6 +145,119 @@ def set_properties():
     bpy.types.Scene.imscale_show_customize = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_sf_custom = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
+    bpy.types.Scene.imscale_show_bone_map = bpy.props.BoolProperty(name='Show bone mapping', default=False)
+
+
+def draw_ui(context, layout):
+    scn = context.scene
+
+    box = layout.box()
+    col=box.column(align=True)
+    col.label(text="Avatar Rescale")
+
+    # Armature Rescale
+    split = col.row(align=True)
+    row = split.row(align=True)
+    row.prop(bpy.context.scene, 'target_height', expand=True)
+    row = split.row(align=True)
+    row.alignment = 'RIGHT'
+    row.operator("armature.get_avatar_height", text="", icon="EMPTY_SINGLE_ARROW")
+
+    row = col.row(align=True)
+    row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
+    # These properties are defined, but not very useful
+    # row = col.row(align=True)
+    # row.prop(bpy.context.scene, 'scale_hand', expand=True)
+    # row = col.row(align=True)
+    # row.prop(bpy.context.scene, 'scale_foot', expand=True)
+
+    # Customization options
+    row = col.row(align=False)
+    if scn.imscale_show_customize:
+        row.prop(scn, "imscale_show_customize", icon="DOWNARROW_HLT", text="", emboss=False)
+    else:
+        row.prop(scn, "imscale_show_customize", icon="RIGHTARROW", text="", emboss=False)
+    row.label(text="Customization")
+
+    if scn.imscale_show_customize:
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'arm_thickness', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'leg_thickness', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'scale_eyes', expand=True)
+        # row = col.row(align=True)
+        # row.prop(bpy.context.scene, 'imscale_show_bone_map', expand=True)
+
+
+    # Debug/section toggle options
+    row = col.row(align=False)
+    if scn.imscale_show_debug:
+        row.prop(scn, "imscale_show_debug", icon="DOWNARROW_HLT", text="", emboss=False)
+    else:
+        row.prop(scn, "imscale_show_debug", icon="RIGHTARROW", text="", emboss=False)
+    row.label(text="Core functionality toggle")
+    if scn.imscale_show_debug:
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'debug_no_adjust', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'debug_no_floor', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'debug_no_scale', expand=True)
+
+    row = col.row(align=True)
+    row.label(text="-------------")
+
+    row = col.row(align=True)
+    row.prop(bpy.context.scene, 'center_model', expand=True)
+
+    row = col.row(align=True)
+    row.scale_y=1.1
+    op = row.operator("armature.rescale", text="Rescale Armature")
+
+    # Spread Fingers
+    box = layout.box()
+    col=box.column(align=True)
+    col.label(text="Finger Spreading")
+
+    row = col.row(align=False)
+    if scn.imscale_show_sf_custom:
+        row.prop(scn, "imscale_show_sf_custom", icon="DOWNARROW_HLT", text="", emboss=False)
+    else:
+        row.prop(scn, "imscale_show_sf_custom", icon="RIGHTARROW", text="", emboss=False)
+    row.label(text="Customization")
+
+    if scn.imscale_show_sf_custom:
+        row = col.row(align=True)
+        row.prop(context.scene, 'spare_thumb')
+        row = col.row(align=False)
+        row.prop(context.scene, 'spread_factor')
+
+    row = col.row(align=True)
+    row.label(text="-------------")
+    row.scale_y=1.1
+    row = col.row(align=False)
+    row.operator("armature.spreadfingers", text="Spread Fingers")
+
+    # Shrink Hip
+    box = layout.box()
+    col=box.column(align=True)
+    col.label(text="Hip fix (beta)")
+    row.scale_y=1.1
+    row = col.row(align=True)
+    row.operator("armature.shrink_hips", text="Shrink Hip bone")
+
+    # Bone mapping
+    if scn.imscale_show_bone_map:
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text="Bone Mapping")
+
+    return None
 
 
 class ImmersiveScalerMenu(bpy.types.Panel):
@@ -156,113 +268,9 @@ class ImmersiveScalerMenu(bpy.types.Panel):
     bl_category = "IMScale"
 
     def draw(self, context):
-        scn = context.scene
         layout = self.layout
 
-        box = layout.box()
-        col=box.column(align=True)
-        col.label(text="Avatar Rescale")
-
-        # Armature Rescale
-        split = col.row(align=True)
-        row = split.row(align=True)
-        row.prop(bpy.context.scene, 'target_height', expand=True)
-        row = split.row(align=True)
-        row.alignment = 'RIGHT'
-        row.operator("armature.get_avatar_height", text="", icon="EMPTY_SINGLE_ARROW")
-
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
-
-        # row = col.row(align=True)
-        # row.prop(bpy.context.scene, 'scale_hand', expand=True)
-        # row = col.row(align=True)
-        # row.prop(bpy.context.scene, 'scale_foot', expand=True)
-
-
-        # Customization options
-        row = col.row(align=False)
-        if scn.imscale_show_customize:
-            row.prop(scn, "imscale_show_customize", icon="DOWNARROW_HLT", text="", emboss=False)
-        else:
-            row.prop(scn, "imscale_show_customize", icon="RIGHTARROW", text="", emboss=False)
-        row.label(text="Customization")
-
-        if scn.imscale_show_customize:
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'arm_thickness', expand=True)
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'leg_thickness', expand=True)
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'scale_eyes', expand=True)
-
-
-        # Debug/section toggle options
-        row = col.row(align=False)
-        if scn.imscale_show_debug:
-            row.prop(scn, "imscale_show_debug", icon="DOWNARROW_HLT", text="", emboss=False)
-        else:
-            row.prop(scn, "imscale_show_debug", icon="RIGHTARROW", text="", emboss=False)
-        row.label(text="Core functionality toggle")
-
-        if scn.imscale_show_debug:
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'debug_no_adjust', expand=True)
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'debug_no_floor', expand=True)
-            row = col.row(align=True)
-            row.prop(bpy.context.scene, 'debug_no_scale', expand=True)
-
-        row = col.row(align=True)
-        row.label(text="-------------")
-
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'center_model', expand=True)
-
-        row = col.row(align=True)
-        row.scale_y=1.1
-        op = row.operator("armature.rescale", text="Rescale Armature")
-
-        # Spread Fingers
-        box = layout.box()
-        col=box.column(align=True)
-        col.label(text="Finger Spreading")
-
-        row = col.row(align=False)
-        if scn.imscale_show_sf_custom:
-            row.prop(scn, "imscale_show_sf_custom", icon="DOWNARROW_HLT", text="", emboss=False)
-        else:
-            row.prop(scn, "imscale_show_sf_custom", icon="RIGHTARROW", text="", emboss=False)
-        row.label(text="Customization")
-
-        if scn.imscale_show_sf_custom:
-            row = col.row(align=True)
-            row.prop(context.scene, 'spare_thumb')
-            row = col.row(align=False)
-            row.prop(context.scene, 'spread_factor')
-
-        row = col.row(align=True)
-        row.label(text="-------------")
-        row.scale_y=1.1
-        row = col.row(align=False)
-        row.operator("armature.spreadfingers", text="Spread Fingers")
-
-        # Shrink Hip
-        box = layout.box()
-        col=box.column(align=True)
-        col.label(text="Hip fix (beta)")
-        row.scale_y=1.1
-        row = col.row(align=True)
-        row.operator("armature.shrink_hips", text="Shrink Hip bone")
-
-        return None
-
-
-
+        return draw_ui(context, layout)
 
 def ui_register():
     set_properties()
