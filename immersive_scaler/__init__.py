@@ -8,8 +8,8 @@ importlib.invalidate_caches()
 # import immersive_scaler.operations as imops
 # import immersive_scaler.ui as imui
 
-from . import operations as imops
 from . import ui as imui
+from . import operations as imops
 
 # from .operations import ops_register
 # from .operations import ops_unregister
@@ -28,8 +28,8 @@ bl_info = {
 
 def register():
     print(__name__)
-    importlib.reload(imops)
     importlib.reload(imui)
+    importlib.reload(imops)
     imui.ui_register()
     imops.ops_register()
 

@@ -4,6 +4,8 @@ import math
 
 from .ui import set_properties
 
+from .common import get_armature
+
 def make_annotations(cls):
     bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
     if bl_props:
@@ -16,20 +18,18 @@ def make_annotations(cls):
     return cls
 
 
-def get_objects():
-    return bpy.context.scene.objects
+# def get_objects():
+#     return bpy.context.scene.objects
 
-
-
-def get_armature(armature_name=None):
-    if not armature_name:
-        armature_name = bpy.context.scene.armature
-    if armature_name == None or armature_name == '':
-        armature_name = "Armature"
-    for obj in get_objects():
-        if obj.type == 'ARMATURE' and obj.name == armature_name:
-            return obj
-    return None
+# def get_armature(armature_name=None):
+#     if not armature_name:
+#         armature_name = bpy.context.scene.armature
+#     if armature_name == None or armature_name == '':
+#         armature_name = "Armature"
+#     for obj in get_objects():
+#         if obj.type == 'ARMATURE' and obj.name == armature_name:
+#             return obj
+#     return None
 
 def obj_in_scene(obj):
     for o in bpy.context.view_layer.objects:
@@ -92,6 +92,12 @@ bone_names = {
 }
 
 def get_bone(name, arm):
+    # First check that there's no override
+    s = bpy.context.scene
+    override = getattr(s, "override_" + name)
+    if override != '_None':
+        return arm.pose.bones[override]
+
     name_list = bone_names[name]
     bone_lookup = dict([(bone.name.lower().translate(dict.fromkeys(map(ord, u" _."))), bone) for bone in arm.pose.bones])
     for n in name_list:
@@ -555,15 +561,15 @@ class ArmatureRescale(bpy.types.Operator):
     bl_label = "Rescale Armature"
     bl_options = {'REGISTER', 'UNDO'}
 
-    set_properties()
-    target_height: bpy.types.Scene.target_height
-    arm_to_legs: bpy.types.Scene.arm_to_legs
-    arm_thickness: bpy.types.Scene.arm_thickness
-    leg_thickness: bpy.types.Scene.leg_thickness
-    extra_leg_length: bpy.types.Scene.extra_leg_length
-    scale_hand: bpy.types.Scene.scale_hand
-    thigh_percentage: bpy.types.Scene.thigh_percentage
-    scale_eyes: bpy.types.Scene.scale_eyes
+    #set_properties()
+    # target_height: bpy.types.Scene.target_height
+    # arm_to_legs: bpy.types.Scene.arm_to_legs
+    # arm_thickness: bpy.types.Scene.arm_thickness
+    # leg_thickness: bpy.types.Scene.leg_thickness
+    # extra_leg_length: bpy.types.Scene.extra_leg_length
+    # scale_hand: bpy.types.Scene.scale_hand
+    # thigh_percentage: bpy.types.Scene.thigh_percentage
+    # scale_eyes: bpy.types.Scene.scale_eyes
 
     def execute(self, context):
 
@@ -590,8 +596,8 @@ class ArmatureSpreadFingers(bpy.types.Operator):
     bl_label = "Spread Fingers"
     bl_options = {'REGISTER', 'UNDO'}
 
-    spare_thumb: bpy.types.Scene.spare_thumb
-    spread_factor: bpy.types.Scene.spread_factor
+    # spare_thumb: bpy.types.Scene.spare_thumb
+    # spread_factor: bpy.types.Scene.spread_factor
 
     def execute(self, context):
         spread_fingers(self.spare_thumb, self.spread_factor)

@@ -1,7 +1,15 @@
 import bpy
 
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, CollectionProperty
-from bpy.types import Scene
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, PointerProperty, StringProperty
+from bpy.types import Scene, Bone
+
+from .common import get_armature
+
+# For bone mapping. Currently needs to match the dict keys in operations.py
+BONE_LIST = ["right_shoulder", "right_arm", "right_elbow", "right_wrist",
+                 "right_leg", "right_knee", "right_ankle",
+                 "left_shoulder", "left_arm", "left_elbow", "left_wrist",
+                 "left_leg", "left_knee", "left_ankle"]
 
 def make_annotations(cls):
     bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
@@ -147,6 +155,23 @@ def set_properties():
     bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
     bpy.types.Scene.imscale_show_bone_map = bpy.props.BoolProperty(name='Show bone mapping', default=False)
 
+    # Bone Mapping
+    for bone_name in BONE_LIST:
+        def getbones(self, context):
+            choices = [('_None','_None','_None')]
+            arm = get_armature()
+            if arm is not None:
+                choices = choices + list((b.name, b.name, b.name) for b in arm.data.bones)
+            bpy.types.Object.Enum = choices
+            return bpy.types.Object.Enum
+
+        prop = EnumProperty(
+            name = bone_name.replace("_", " "),
+            description = "Override for {} for when the bone is not automatically found.",
+            items=getbones
+        )
+        setattr(Scene, "override_" + bone_name, prop)
+
 
 def draw_ui(context, layout):
     scn = context.scene
@@ -190,8 +215,8 @@ def draw_ui(context, layout):
         row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'scale_eyes', expand=True)
-        # row = col.row(align=True)
-        # row.prop(bpy.context.scene, 'imscale_show_bone_map', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'imscale_show_bone_map', expand=True)
 
 
     # Debug/section toggle options
@@ -255,7 +280,13 @@ def draw_ui(context, layout):
     if scn.imscale_show_bone_map:
         box = layout.box()
         col = box.column(align=True)
-        col.label(text="Bone Mapping")
+        col.label(text="Bone Overrides")
+        box.use_property_split = True
+        box.use_property_decorate = True
+
+        for bone_name in BONE_LIST:
+            row = col.row(align=True)
+            row.prop(context.scene, 'override_'+bone_name)
 
     return None
 
