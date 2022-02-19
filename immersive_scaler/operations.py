@@ -91,14 +91,28 @@ def get_bone(name, arm):
             return bone_lookup[n]
     return arm.pose.bones[name]
 
+def bonetree(bone):
+    l = [bone]
+    for c in bone.children:
+        for b in bonetree(c):
+            l.append(b)
+    return l
+
 def get_lowest_point():
+    arm = get_armature()
+    bones = bonetree(get_bone("left_ankle", arm)) + bonetree(get_bone("right_ankle", arm))
     meshes = get_body_meshes()
     lowest_vertex = meshes[0].data.vertices[0]
     lowest_vertex_z = 999999
     for o in meshes:
         mesh = o.data
+        group_numbers = {o.vertex_groups[i].name: i for i in range(len(o.vertex_groups))}
+        foot_groups = [group_numbers[b.name] for b in bones if b.name in group_numbers]
         wm = o.matrix_world
         for v in mesh.vertices:
+            # Check that v is weighted to the ankle or a child
+            if not any(g.group in foot_groups for g in v.groups):
+                continue
             wco = wm @ v.co
             if wco[2] < lowest_vertex_z:
                 lowest_vertex = v
