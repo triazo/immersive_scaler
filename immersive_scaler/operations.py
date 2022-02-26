@@ -152,7 +152,8 @@ def get_view_y(obj):
     # Magic that somebody posted in discord. I'm going to just assume
     # these constants are correct. Testing shows it's at least pretty
     # darn close
-    view_y = (head_to_hand(obj) / .4537) + .005
+    #view_y = (head_to_hand(obj) / .4537) + .005
+    view_y = (head_to_hand(obj) / .415) + .005
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
 
     return view_y
@@ -180,7 +181,8 @@ def calculate_arm_rescaling(obj, head_arm_change):
 
     rhandpos = get_bone("right_wrist", obj).head
     rarmpos = get_bone("right_arm", obj).head
-    headpos = obj.pose.bones['Head'].head
+    #headpos = obj.pose.bones['Head'].head
+    neckpos = obj.pose.bones['Neck'].head
 
     # Reset t-pose to whatever it was before since we have the data we
     # need
@@ -189,7 +191,8 @@ def calculate_arm_rescaling(obj, head_arm_change):
     total_length = head_to_hand(obj)
     print("Arm length is {}".format(total_length))
     arm_length = (rarmpos - rhandpos).length
-    neck_length = abs((headpos[2] - rarmpos[2]))
+    #neck_length = abs((headpos[2] - rarmpos[2]))
+    neck_length = abs((neckpos[2] - rarmpos[2]))
 
     # Sanity check - compare the difference between head_to_hand and manual
     # print("")
@@ -208,7 +211,7 @@ def calculate_arm_rescaling(obj, head_arm_change):
     # y is neck length
     # a is head_arm_change
     # s is shoulder_length
-    # Drawing a picture with the arm and neck as a right triangle is necessary to understand this
+    # Drawing a picture with the arm and neck as a right triangle is basically necessary to understand this
 
     arm_change = (math.sqrt((head_arm_change * total_length - neck_length) * (head_arm_change * total_length + neck_length)) / arm_length) - (shoulder_length / arm_length)
 
