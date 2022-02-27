@@ -67,7 +67,6 @@ bone_names = {
     "right_leg": ["rightleg", "legr", "rleg", "upperlegr", "thighr","rightupperleg"],
     "right_knee": ["rightknee", "kneer", "rknee", "lowerlegr", "calfr", "rightlowerleg"],
     "right_ankle": ["rightankle", "ankler", "rankle", "rightfoot", "footr", "rightfoot"],
-
     "left_shoulder": ["leftshoulder", "shoulderl", "rshoulder"],
     "left_arm": ["leftarm", "arml", "rarm", "upperarml", "leftupperarm"],
     "left_elbow": ["leftelbow", "elbowl", "relbow", "lowerarml", "leftlowerarm", "lowerarml"],
@@ -83,7 +82,6 @@ def get_bone(name, arm):
     override = getattr(s, "override_" + name)
     if override != '_None':
         return arm.pose.bones[override]
-
     name_list = bone_names[name]
     bone_lookup = dict([(bone.name.lower().translate(dict.fromkeys(map(ord, u" _."))), bone) for bone in arm.pose.bones])
     for n in name_list:
@@ -102,22 +100,33 @@ def get_lowest_point():
     arm = get_armature()
     bones = bonetree(get_bone("left_ankle", arm)) + bonetree(get_bone("right_ankle", arm))
     meshes = get_body_meshes()
-    lowest_vertex = meshes[0].data.vertices[0]
     lowest_vertex_z = 999999
+    lowest_foot_z = 999999
     for o in meshes:
+        # Going to edit mode and back fixes a weird bug sometimes..
+        # Mesh data doesn't match what's shown in blender, data hasn't
+        # updated yet but going to edit mode and bock forces an
+        # update. Unfortunately, this also makes it take noticably
+        # longer, since this function runs several times.
+        bpy.context.view_layer.objects.active = o
+        bpy.ops.object.mode_set(mode='EDIT', toggle = False)
+        o.update_from_editmode()
+        bpy.ops.object.mode_set(mode='EDIT', toggle = True)
         mesh = o.data
         group_numbers = {o.vertex_groups[i].name: i for i in range(len(o.vertex_groups))}
         foot_groups = [group_numbers[b.name] for b in bones if b.name in group_numbers]
         wm = o.matrix_world
         for v in mesh.vertices:
+            wco = wm @ v.co
+            wco = v.co
+            lowest_vertex_z = min(lowest_vertex_z, wco[2])
             # Check that v is weighted to the ankle or a child
             if not any(g.group in foot_groups for g in v.groups):
                 continue
-            wco = wm @ v.co
-            if wco[2] < lowest_vertex_z:
-                lowest_vertex = v
-                lowest_vertex_z = wco[2]
-    return(lowest_vertex_z)
+            lowest_foot_z = min(lowest_foot_z, wco[2])
+    if lowest_foot_z == 999999:
+        return(lowest_vertex_z)
+    return lowest_foot_z
 
 
 def get_highest_point():
@@ -382,9 +391,9 @@ def move_to_floor():
     aloc = get_armature().location
     newOrigin = (aloc[0], aloc[1], dz)
 
-    # print("New origin point: {}".format(newOrigin))
-    # print("Moving origin down by %f"%dz)
-    # print("Highest point is %f"%hp)
+    print("New origin point: {}".format(newOrigin))
+    print("Moving origin down by %f"%dz)
+    #print("Highest point is %f"%hp)
 
     meshes = get_body_meshes()
     for obj in meshes:
