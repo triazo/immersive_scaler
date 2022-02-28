@@ -131,6 +131,12 @@ def set_properties():
         default = False
         )
 
+    Scene.legacy_scaling = BoolProperty(
+        name = "Legacy Scaling",
+        description = "Scales to the proportions vrchat uses in Legacy IK when on, defaults to the scaling used by vrchat's IK 2.0",
+        default = False
+        )
+
     # Finger spreading
     Scene.spare_thumb = BoolProperty(
         name = "Ignore thumb",
@@ -215,6 +221,8 @@ def draw_ui(context, layout):
         row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'scale_eyes', expand=True)
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'legacy_scaling', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'imscale_show_bone_map', expand=True)
 

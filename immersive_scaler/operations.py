@@ -147,7 +147,7 @@ def get_highest_point():
 def get_height():
     return get_highest_point() - get_lowest_point()
 
-def get_view_y(obj):
+def get_view_y(obj, legacy = False):
     # VRC uses the distance between the head bone and right hand in
     # t-pose as the basis for world scale. Enforce t-pose locally to
     # grab this number
@@ -158,29 +158,36 @@ def get_view_y(obj):
     # Gets the in-vrchat virtual height that the view will be at,
     # relative to your actual floor.
 
-    # Magic that somebody posted in discord. I'm going to just assume
-    # these constants are correct. Testing shows it's at least pretty
-    # darn close
-    #view_y = (head_to_hand(obj) / .4537) + .005
+    # With IK 2.0, the constant has changed. Kung mentioned it was
+    # to the neck, and the contstant is now 0.415.
     view_y = (head_to_hand(obj) / .415) + .005
+    if legacy:
+        # Magic that somebody posted in discord. I'm going to just assume
+        # these constants are correct. Testing shows it's at least pretty
+        # darn close
+        view_y = (head_to_hand(obj, legacy = True) / .4537) + .005
+
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
 
     return view_y
 
 
-def head_to_hand(obj):
+def head_to_hand(obj, legacy = False):
     # Since arms might not be flat, add the length of the arm to the x
     # coordinate of the shoulder
     headpos = obj.pose.bones['Head'].head
+    neckpos = obj.pose.bones['Neck'].head
     shoulder = get_bone("right_arm", obj).head
     arm_length = (get_bone("right_arm",obj).head - get_bone("right_wrist", obj).head).length
     arm_length = (get_bone("right_arm",obj).length + get_bone("right_elbow", obj).length)
     t_hand_pos = mathutils.Vector((shoulder[0] - arm_length, shoulder[1], shoulder[2]))
     bpy.context.scene.cursor.location = t_hand_pos
-    return (headpos - t_hand_pos).length
+    if legacy:
+        return (headpos - t_hand_pos).length
+    return (neckpos - t_hand_pos).length
 
 
-def calculate_arm_rescaling(obj, head_arm_change):
+def calculate_arm_rescaling(obj, head_arm_change, legacy = False):
     # Calculates the percent change in arm length needed to create a
     # given change in head-hand length.
 
@@ -190,18 +197,19 @@ def calculate_arm_rescaling(obj, head_arm_change):
 
     rhandpos = get_bone("right_wrist", obj).head
     rarmpos = get_bone("right_arm", obj).head
-    #headpos = obj.pose.bones['Head'].head
+    headpos = obj.pose.bones['Head'].head
     neckpos = obj.pose.bones['Neck'].head
 
     # Reset t-pose to whatever it was before since we have the data we
     # need
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
 
-    total_length = head_to_hand(obj)
+    total_length = head_to_hand(obj, legacy)
     print("Arm length is {}".format(total_length))
     arm_length = (rarmpos - rhandpos).length
-    #neck_length = abs((headpos[2] - rarmpos[2]))
     neck_length = abs((neckpos[2] - rarmpos[2]))
+    if legacy:
+        neck_length = abs((headpos[2] - rarmpos[2]))
 
     # Sanity check - compare the difference between head_to_hand and manual
     # print("")
@@ -329,10 +337,10 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
     # for b in scale_bones:
     #     arm.data.bones[b].inherit_scale = saved_bone_inherit_scales[b]
 
-def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage):
+def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, legacy = False):
     arm = get_armature()
 
-    view_y = get_view_y(arm) + extra_leg_length
+    view_y = get_view_y(arm, legacy) + extra_leg_length
     eye_y = get_eye_height(arm)
 
     # TODO: add an option for people who *want* their legs below the floor.
@@ -346,7 +354,7 @@ def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, 
     rescale_arm_ratio = rescale_ratio ** (1-arm_to_legs)
 
     leg_scale_ratio = 1 - (1 - (1/rescale_leg_ratio)) / leg_height_portion
-    arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio)
+    arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio, legacy)
 
     print("Total required scale factor is %f" % rescale_ratio)
     print("Scaling legs by a factor of %f to %f" % (leg_scale_ratio, leg_scale_ratio * get_leg_length(arm)))
@@ -480,12 +488,12 @@ def center_model():
     arm.location = (0,0,0)
 
 
-def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, scale_eyes):
+def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, scale_eyes, legacy):
     s = bpy.context.scene
 
 
     if not s.debug_no_adjust:
-        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage)
+        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, legacy)
     if not s.debug_no_floor:
         move_to_floor()
 
@@ -585,7 +593,7 @@ class ArmatureRescale(bpy.types.Operator):
 
     def execute(self, context):
 
-        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.scale_eyes)
+        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.scale_eyes, self.legacy_scaling)
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -598,6 +606,7 @@ class ArmatureRescale(bpy.types.Operator):
         self.scale_hand = s.scale_hand
         self.thigh_percentage = s.thigh_percentage
         self.scale_eyes = s.scale_eyes
+        self.legacy_scaling = s.legacy_scaling
 
         return self.execute(context)
 
