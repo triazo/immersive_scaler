@@ -7,9 +7,10 @@ from .common import get_armature
 
 # For bone mapping. Currently needs to match the dict keys in operations.py
 BONE_LIST = ["right_shoulder", "right_arm", "right_elbow", "right_wrist",
-                 "right_leg", "right_knee", "right_ankle",
-                 "left_shoulder", "left_arm", "left_elbow", "left_wrist",
-                 "left_leg", "left_knee", "left_ankle"]
+             "right_leg", "right_knee", "right_ankle", "right_eye",
+             "left_shoulder", "left_arm", "left_elbow", "left_wrist",
+             "left_leg", "left_knee", "left_ankle", "left_eye",
+             "neck", "head"]
 
 def make_annotations(cls):
     bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}

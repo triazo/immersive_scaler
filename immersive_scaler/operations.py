@@ -67,6 +67,7 @@ bone_names = {
     "right_leg": ["rightleg", "legr", "rleg", "upperlegr", "thighr","rightupperleg"],
     "right_knee": ["rightknee", "kneer", "rknee", "lowerlegr", "calfr", "rightlowerleg"],
     "right_ankle": ["rightankle", "ankler", "rankle", "rightfoot", "footr", "rightfoot"],
+    "right_eye": ['eyer', 'righteye', 'eyeright', 'righteye001'],
     "left_shoulder": ["leftshoulder", "shoulderl", "rshoulder"],
     "left_arm": ["leftarm", "arml", "rarm", "upperarml", "leftupperarm"],
     "left_elbow": ["leftelbow", "elbowl", "relbow", "lowerarml", "leftlowerarm", "lowerarml"],
@@ -74,6 +75,9 @@ bone_names = {
     "left_leg": ["leftleg", "legl", "rleg", "upperlegl", "thighl","leftupperleg"],
     "left_knee": ["leftknee", "kneel", "rknee", "lowerlegl", "calfl", "leftlowerleg"],
     "left_ankle": ["leftankle", "anklel", "rankle", "leftfoot", "footl", "leftfoot"],
+    "left_eye": ['eyel', 'lefteye', 'eyeleft', 'lefteye001'],
+    "head": ["head"],
+    "neck": ["neck"],
 }
 
 def get_bone(name, arm):
@@ -175,8 +179,8 @@ def get_view_y(obj, legacy = False):
 def head_to_hand(obj, legacy = False):
     # Since arms might not be flat, add the length of the arm to the x
     # coordinate of the shoulder
-    headpos = obj.pose.bones['Head'].head
-    neckpos = obj.pose.bones['Neck'].head
+    headpos = get_bone("head", obj).head
+    neckpos = get_bone("neck", obj).head
     shoulder = get_bone("right_arm", obj).head
     arm_length = (get_bone("right_arm",obj).head - get_bone("right_wrist", obj).head).length
     arm_length = (get_bone("right_arm",obj).length + get_bone("right_elbow", obj).length)
@@ -197,8 +201,8 @@ def calculate_arm_rescaling(obj, head_arm_change, legacy = False):
 
     rhandpos = get_bone("right_wrist", obj).head
     rarmpos = get_bone("right_arm", obj).head
-    headpos = obj.pose.bones['Head'].head
-    neckpos = obj.pose.bones['Neck'].head
+    headpos = get_bone("head", obj).head
+    neckpos = get_bone("neck", obj).head
 
     # Reset t-pose to whatever it was before since we have the data we
     # need
@@ -236,22 +240,25 @@ def calculate_arm_rescaling(obj, head_arm_change, legacy = False):
 
 
 def get_eye_height(obj):
-    pose_bones = obj.pose.bones
+    # pose_bones = obj.pose.bones
 
-    l_eye_list = ['Eye_L', 'Eye_l', 'LeftEye', 'EyeLeft', 'lefteye', 'eyeleft', 'eye_l', 'Lefteye', 'leftEye', 'LeftEye_001']
-    r_eye_list = ['Eye_R', 'Eye_r', 'RightEye', 'EyeRight', 'righteye', 'eyeright', 'eye_r', 'Righteye', 'rightEye', 'RightEye_001']
+    # l_eye_list = ['Eye_L', 'Eye_l', 'LeftEye', 'EyeLeft', 'lefteye', 'eyeleft', 'eye_l', 'Lefteye', 'leftEye', 'LeftEye_001']
+    # r_eye_list = ['Eye_R', 'Eye_r', 'RightEye', 'EyeRight', 'righteye', 'eyeright', 'eye_r', 'Righteye', 'rightEye', 'RightEye_001']
 
-    left_eye = None
-    right_eye = None
+    # left_eye = None
+    # right_eye = None
 
-    for n in l_eye_list:
-        if n in pose_bones:
-            left_eye = pose_bones[n]
-            break
-    for n in r_eye_list:
-        if n in pose_bones:
-            right_eye = pose_bones[n]
-            break
+    # for n in l_eye_list:
+    #     if n in pose_bones:
+    #         left_eye = pose_bones[n]
+    #         break
+    # for n in r_eye_list:
+    #     if n in pose_bones:
+    #         right_eye = pose_bones[n]
+    #         break
+
+    left_eye = get_bone("left_eye", obj)
+    right_eye = get_bone("right_eye", obj)
     if left_eye == None or right_eye == None:
         raise(Error('Two eye bones required'))
 
