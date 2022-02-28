@@ -2,6 +2,11 @@ Immersive Scaler
 ===========
 Fine tuned automated avatar scaling, for vrchat
 
+**Scaling has changed with VRChat's IK 2.0**
+
+Immersive Scaler supports the new scaling, but must be run again on
+old avatars.
+
 ## Purpose
 
 VRChat uses avatar scale and proportions to get world vr world size
@@ -36,6 +41,8 @@ On the 'Add-ons' page in preferences, scroll down to '3D View:
 Immersive scaler' and select the check box. A tab named 'IMScale'
 should now appear on the 3d view toolbar, on the right hand side of
 the view.
+
+To test out the development version, see instructions at the bottom.
 
 ## Upgrading
 
@@ -103,6 +110,16 @@ Options are:
   based on the eye height instead. When this is checked, the button to
   get the current height will also respond based on eye height.
 
+- **Legacy Scaling**: With VRChat's IK 2.0 system, the scaling ratios
+  used by the platform are different, but there is still the option
+  to use the Legacy IK system, with legacy scaling. Enabling this
+  will tell immersive scaler to use the legacy scaling ratios.
+
+- **Bone Overrides**: Immersive scaler has a list of bone names
+  preprogrammed, and if your bone isn't detected will throw an
+  error. When checked, a list will appear at the bottom of the UI
+  letting you manually select the bone to use.
+
 - **Center Model**: When set to true, the model will be centered at
   x,y = 0,0 in blender, as well as moved to the floor. When off,
   the avatar is still moved to the floor z=0.
@@ -118,6 +135,7 @@ Options are:
 - **Skip Height Scaling**: The avatar will not be scaled to height, and
   will keep the height it had after resizing the legs and moving the
   avatar to the floor.
+
 
 
 ## Spreading Fingers
@@ -142,6 +160,11 @@ fingers in what is hopefully a more natural position
 In some models it helps to shrink the hip bone. This is just a shortcut
 to move the hip bone almost all the way to the spine.
 
+## Development version Install
+
+Either clone or download this repository, then create a zip of the
+`immersive_scaler` directory. This zip is the same as what's
+downloaded from the releases page.
 
 ## Contact
 
