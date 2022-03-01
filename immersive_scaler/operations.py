@@ -163,8 +163,8 @@ def get_view_y(obj, legacy = False):
     # relative to your actual floor.
 
     # With IK 2.0, the constant has changed. Kung mentioned it was
-    # to the neck, and the contstant is now 0.415.
-    view_y = (head_to_hand(obj) / .415) + .005
+    # to the neck, and the contstant is now 0.412.
+    view_y = (head_to_hand(obj) / .412) + .005
     if legacy:
         # Magic that somebody posted in discord. I'm going to just assume
         # these constants are correct. Testing shows it's at least pretty
