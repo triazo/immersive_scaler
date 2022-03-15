@@ -135,7 +135,7 @@ def set_properties():
     Scene.legacy_scaling = BoolProperty(
         name = "Legacy Scaling",
         description = "Scales to the proportions vrchat uses in Legacy IK when on, defaults to the scaling used by vrchat's IK 2.0",
-        default = False
+        default = True
         )
 
     # Finger spreading
