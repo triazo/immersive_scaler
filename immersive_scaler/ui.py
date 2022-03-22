@@ -90,6 +90,17 @@ def set_properties():
         subtype = 'PERCENTAGE'
     )
 
+    Scene.custom_scale_ratio = FloatProperty(
+        name = "Custom Arm Ratio",
+        description = "The target proportions to scale to. Same as the --custom-arm-ratio argument in vrchat. A higher value means longer arms. 0.4537 is vchat's default and 0.415 was used previously in beta, personal values will likely be between the two",
+        default = 0.4537,
+        step = .005,
+        precision = 4,
+        soft_min = 0.35,
+        soft_max = 0.5,
+        subtype = 'FACTOR'
+    )
+
     Scene.scale_hand = BoolProperty(
         name = "Scale hand",
         description = "Toggle for scaling the hand with the arm",
@@ -218,6 +229,14 @@ def draw_ui(context, layout):
         row.prop(bpy.context.scene, 'leg_thickness', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
+
+        split = col.row(align=True)
+        row = split.row(align=True)
+        row.prop(bpy.context.scene, 'custom_scale_ratio', expand=True)
+        row = split.row(align=True)
+        row.alignment = 'RIGHT'
+        row.operator("armature.get_scale_ratio", text="", icon="EMPTY_SINGLE_ARROW")
+
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
         row = col.row(align=True)

@@ -151,7 +151,7 @@ def get_highest_point():
 def get_height():
     return get_highest_point() - get_lowest_point()
 
-def get_view_y(obj, legacy = False):
+def get_view_y(obj, custom_scale_ratio=.4537, legacy = True):
     # VRC uses the distance between the head bone and right hand in
     # t-pose as the basis for world scale. Enforce t-pose locally to
     # grab this number
@@ -164,19 +164,30 @@ def get_view_y(obj, legacy = False):
 
     # With IK 2.0, the constant has changed. Kung mentioned it was
     # to the neck, and the contstant is now 0.412.
-    view_y = (head_to_hand(obj) / .412) + .005
+    view_y = (head_to_hand(obj, legacy = False) / .412) + .005
     if legacy:
         # Magic that somebody posted in discord. I'm going to just assume
         # these constants are correct. Testing shows it's at least pretty
         # darn close
-        view_y = (head_to_hand(obj, legacy = True) / .4537) + .005
+        view_y = (head_to_hand(obj) / custom_scale_ratio) + .005
 
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
 
     return view_y
 
+def get_current_scaling(obj):
 
-def head_to_hand(obj, legacy = False):
+    unhide_obj(obj)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode='POSE', toggle = False)
+
+    ratio = head_to_hand(obj, legacy=True) / (get_eye_height(obj) - .005)
+
+    bpy.ops.object.mode_set(mode='POSE', toggle = True)
+    return ratio
+
+
+def head_to_hand(obj, legacy = True):
     # Since arms might not be flat, add the length of the arm to the x
     # coordinate of the shoulder
     headpos = get_bone("head", obj).head
@@ -191,7 +202,7 @@ def head_to_hand(obj, legacy = False):
     return (neckpos - t_hand_pos).length
 
 
-def calculate_arm_rescaling(obj, head_arm_change, legacy = False):
+def calculate_arm_rescaling(obj, head_arm_change, legacy = True):
     # Calculates the percent change in arm length needed to create a
     # given change in head-hand length.
 
@@ -240,23 +251,6 @@ def calculate_arm_rescaling(obj, head_arm_change, legacy = False):
 
 
 def get_eye_height(obj):
-    # pose_bones = obj.pose.bones
-
-    # l_eye_list = ['Eye_L', 'Eye_l', 'LeftEye', 'EyeLeft', 'lefteye', 'eyeleft', 'eye_l', 'Lefteye', 'leftEye', 'LeftEye_001']
-    # r_eye_list = ['Eye_R', 'Eye_r', 'RightEye', 'EyeRight', 'righteye', 'eyeright', 'eye_r', 'Righteye', 'rightEye', 'RightEye_001']
-
-    # left_eye = None
-    # right_eye = None
-
-    # for n in l_eye_list:
-    #     if n in pose_bones:
-    #         left_eye = pose_bones[n]
-    #         break
-    # for n in r_eye_list:
-    #     if n in pose_bones:
-    #         right_eye = pose_bones[n]
-    #         break
-
     left_eye = get_bone("left_eye", obj)
     right_eye = get_bone("right_eye", obj)
     if left_eye == None or right_eye == None:
@@ -344,10 +338,10 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
     # for b in scale_bones:
     #     arm.data.bones[b].inherit_scale = saved_bone_inherit_scales[b]
 
-def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, legacy = False):
+def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, legacy = False):
     arm = get_armature()
 
-    view_y = get_view_y(arm, legacy) + extra_leg_length
+    view_y = get_view_y(arm, custom_scale_ratio, legacy) + extra_leg_length
     eye_y = get_eye_height(arm)
 
     # TODO: add an option for people who *want* their legs below the floor.
@@ -495,12 +489,12 @@ def center_model():
     arm.location = (0,0,0)
 
 
-def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, scale_eyes, legacy):
+def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_eyes, legacy):
     s = bpy.context.scene
 
 
     if not s.debug_no_adjust:
-        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, legacy)
+        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, legacy)
     if not s.debug_no_floor:
         move_to_floor()
 
@@ -600,7 +594,7 @@ class ArmatureRescale(bpy.types.Operator):
 
     def execute(self, context):
 
-        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.scale_eyes, self.legacy_scaling)
+        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.custom_scale_ratio, self.scale_eyes, self.legacy_scaling)
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -612,8 +606,10 @@ class ArmatureRescale(bpy.types.Operator):
         self.extra_leg_length = s.extra_leg_length
         self.scale_hand = s.scale_hand
         self.thigh_percentage = s.thigh_percentage
+        self.custom_scale_ratio = s.custom_scale_ratio
         self.scale_eyes = s.scale_eyes
         self.legacy_scaling = s.legacy_scaling
+
 
         return self.execute(context)
 
@@ -664,6 +660,18 @@ class UIGetCurrentHeight(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class UIGetScaleRatio(bpy.types.Operator):
+    """Gets the custom scaling ratio based on the current avatar's proportions"""
+    bl_idname = "armature.get_scale_ratio"
+    bl_label = "Get Current Avatar Scale Ratio"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        scale = get_current_scaling(get_armature())
+        context.scene.custom_scale_ratio = scale
+        return {'FINISHED'}
+
+
 def ops_register():
     print("Registering Armature tuning add-on")
     bpy.utils.register_class(ArmatureRescale)
@@ -678,6 +686,9 @@ def ops_register():
     bpy.utils.register_class(UIGetCurrentHeight)
     make_annotations(UIGetCurrentHeight)
 
+    bpy.utils.register_class(UIGetScaleRatio)
+    make_annotations(UIGetScaleRatio)
+
     print("Registering Armature tuning add-on")
 
 def ops_unregister():
@@ -686,6 +697,7 @@ def ops_unregister():
     bpy.utils.unregister_class(ArmatureSpreadFingers)
     bpy.utils.unregister_class(ArmatureShrinkHip)
     bpy.utils.unregister_class(UIGetCurrentHeight)
+    bpy.utils.unregister_class(UIGetScaleRatio)
     print("Unregistering Armature tuning add-on")
 
 if __name__ == "__main__":
