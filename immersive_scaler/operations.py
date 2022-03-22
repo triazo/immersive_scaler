@@ -594,7 +594,7 @@ class ArmatureRescale(bpy.types.Operator):
 
     def execute(self, context):
 
-        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.custom_scale_ratio, self.scale_eyes, self.legacy_scaling)
+        rescale_main(self.target_height, self.arm_to_legs / 100.0, self.arm_thickness / 100.0, self.leg_thickness / 100.0, self.extra_leg_length, self.scale_hand, self.thigh_percentage / 100.0, self.custom_scale_ratio, self.scale_eyes, True )
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -609,6 +609,7 @@ class ArmatureRescale(bpy.types.Operator):
         self.custom_scale_ratio = s.custom_scale_ratio
         self.scale_eyes = s.scale_eyes
         self.legacy_scaling = s.legacy_scaling
+        self.legacy_scaling = True
 
 
         return self.execute(context)

@@ -242,8 +242,8 @@ def draw_ui(context, layout):
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'scale_eyes', expand=True)
         row = col.row(align=True)
-        row.prop(bpy.context.scene, 'legacy_scaling', expand=True)
-        row = col.row(align=True)
+        # row.prop(bpy.context.scene, 'legacy_scaling', expand=True)
+        # row = col.row(align=True)
         row.prop(bpy.context.scene, 'imscale_show_bone_map', expand=True)
 
 
