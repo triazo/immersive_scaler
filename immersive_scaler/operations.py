@@ -137,12 +137,11 @@ def get_lowest_point():
         return(lowest_vertex_z)
     return lowest_foot_z
 
-
 def get_highest_point():
     # Almost the same as get_lowest_point for obvious reasons
     meshes = get_body_meshes()
     # TODO: bounds check
-    highest_vertex = meshes[0].data.vertices[0]
+    highest_vertex = None
     highest_vertex_z = 0
     for o in meshes:
         mesh = o.data
@@ -152,6 +151,8 @@ def get_highest_point():
             if wco[2] > highest_vertex_z:
                 highest_vertex = v
                 highest_vertex_z = wco[2]
+    if highest_vertex == None:
+        raise(RuntimeError("No mesh data found"))
     return(highest_vertex_z)
 
 def get_height():
@@ -260,7 +261,7 @@ def get_eye_height(obj):
     left_eye = get_bone("left_eye", obj)
     right_eye = get_bone("right_eye", obj)
     if left_eye == None or right_eye == None:
-        raise(Error('Two eye bones required'))
+        raise(RuntimeError('Cannot identify two eye bones'))
 
     eye_average = (left_eye.head + right_eye.head) / 2
 
