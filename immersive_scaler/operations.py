@@ -107,11 +107,15 @@ def get_lowest_point():
     lowest_vertex_z = 999999
     lowest_foot_z = 999999
     for o in meshes:
+        # Can't do below workaround when stuff's hidden
+        hidden = o.hide_get()
+        o.hide_set(False)
+
         # Going to edit mode and back fixes a weird bug sometimes..
         # Mesh data doesn't match what's shown in blender, data hasn't
         # updated yet but going to edit mode and bock forces an
         # update. Unfortunately, this also makes it take noticably
-        # longer, since this function runs several times.
+        # longer, since this whole function runs several times.
         bpy.context.view_layer.objects.active = o
         bpy.ops.object.mode_set(mode='EDIT', toggle = False)
         o.update_from_editmode()
@@ -128,6 +132,7 @@ def get_lowest_point():
             if not any(g.group in foot_groups for g in v.groups):
                 continue
             lowest_foot_z = min(lowest_foot_z, wco[2])
+        o.hide_set(hidden)
     if lowest_foot_z == 999999:
         return(lowest_vertex_z)
     return lowest_foot_z
@@ -136,6 +141,7 @@ def get_lowest_point():
 def get_highest_point():
     # Almost the same as get_lowest_point for obvious reasons
     meshes = get_body_meshes()
+    # TODO: bounds check
     highest_vertex = meshes[0].data.vertices[0]
     highest_vertex_z = 0
     for o in meshes:
@@ -406,6 +412,9 @@ def move_to_floor():
 
     meshes = get_body_meshes()
     for obj in meshes:
+        hidden = obj.hide_get()
+        obj.hide_set(False)
+
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
         bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
@@ -414,6 +423,7 @@ def move_to_floor():
 
         # This actually does the moving of the body
         obj.location = (aloc[0],aloc[1],0)
+        obj.hide_set(hidden)
         obj.select_set(False)
 
     bpy.context.view_layer.objects.active = arm
@@ -437,6 +447,8 @@ def move_to_floor():
 
 def recursive_object_mode(obj):
     bpy.context.view_layer.objects.active = obj
+    hidden = obj.hide_get()
+    obj.hide_set(False)
     bpy.ops.object.mode_set(mode='OBJECT', toggle = False)
     for c in obj.children:
         if not obj_in_scene(c):
@@ -445,6 +457,7 @@ def recursive_object_mode(obj):
             continue
         if 'scale' in dir(c):
             recursive_object_mode(c)
+    obj.hide_set(hidden)
 
 def recursive_scale(obj):
     bpy.context.scene.cursor.location = obj.location
