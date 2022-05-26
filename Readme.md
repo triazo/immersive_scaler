@@ -5,7 +5,8 @@ Fine tuned automated avatar scaling, for vrchat
 **Scaling has changed with VRChat's IK 2.0**
 
 Immersive Scaler supports the new scaling, but must be run again on
-old avatars.
+old avatars. Play with the 'Custom Arm Ratio' option in options to
+make the most of the new scaling options.
 
 ## Purpose
 
@@ -95,6 +96,15 @@ Options are:
   and the foot, what percentage should be used by the thigh, vs the
   calf. This helps get the knee in the right place when using full
   body.
+  
+- **Custom Arm Ratio**: This option corresponds to vrchat's
+  `--custom-arm-ratio` launch option. When the number provided here
+  matches the number passed as an argument (or the default, 0.4537),
+  scale by arm mode should be identical to scale by height mode. This
+  option is useful to quickly get an avatar with arms that are the
+  right length. The default is vrchat's default but it's reccomended
+  to lower it a tiny bit to match your own preference. I personally go
+  around 0.43, and 0.415 was used in a previous vrchat beta.
 
 - **Extra Leg Length**: In case no configuration where the avatar's
   feet touch the floor looks any good, you can have the avatar's feet
