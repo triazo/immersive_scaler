@@ -55,8 +55,7 @@ re-enable it.
 
 ## Usage
 
-First, install the CATS plugin. There is currently a hard
-dependency on the pose mode operations.
+First, it's recommended to install the CATS plugin.
 
 Import your avatar, use the CATS fix (no arguments necessary,
 I've just observed weird behavior when run against armatures without
@@ -119,11 +118,6 @@ Options are:
   the highest vertex, but when this toggle is set, it will scale it
   based on the eye height instead. When this is checked, the button to
   get the current height will also respond based on eye height.
-
-- **Legacy Scaling**: With VRChat's IK 2.0 system, the scaling ratios
-  used by the platform are different, but there is still the option
-  to use the Legacy IK system, with legacy scaling. Enabling this
-  will tell immersive scaler to use the legacy scaling ratios.
 
 - **Bone Overrides**: Immersive scaler has a list of bone names
   preprogrammed, and if your bone isn't detected will throw an

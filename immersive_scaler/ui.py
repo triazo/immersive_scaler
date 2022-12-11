@@ -3,6 +3,8 @@ import bpy
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, PointerProperty, StringProperty
 from bpy.types import Scene, Bone
 
+from sys import intern
+
 from .common import get_armature
 
 # For bone mapping. Currently needs to match the dict keys in operations.py
@@ -12,16 +14,9 @@ BONE_LIST = ["right_shoulder", "right_arm", "right_elbow", "right_wrist",
              "left_leg", "left_knee", "left_ankle", "left_eye",
              "neck", "head"]
 
-def make_annotations(cls):
-    bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
-    if bl_props:
-        if '__annotations__' not in cls.__dict__:
-            setattr(cls, '__annotations__', {})
-        annotations = cls.__dict__['__annotations__']
-        for k, v in bl_props.items():
-            annotations[k] = v
-            delattr(cls, k)
-    return cls
+# Cache for enum property choices
+_ENUM_CACHE = None
+
 
 def set_properties():
     Scene.target_height = FloatProperty(
@@ -143,12 +138,6 @@ def set_properties():
         default = False
         )
 
-    Scene.legacy_scaling = BoolProperty(
-        name = "Legacy Scaling",
-        description = "Scales to the proportions vrchat uses in Legacy IK when on, defaults to the scaling used by vrchat's IK 2.0",
-        default = True
-        )
-
     # Finger spreading
     Scene.spare_thumb = BoolProperty(
         name = "Ignore thumb",
@@ -173,16 +162,22 @@ def set_properties():
     bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
     bpy.types.Scene.imscale_show_bone_map = bpy.props.BoolProperty(name='Show bone mapping', default=False)
 
+    _none_enum_item = ('_None',) * 3
+
+    def getbones(self, context):
+        global _ENUM_CACHE
+        choices = [_none_enum_item]
+        arm = get_armature()
+        if arm is not None:
+            # intern each string in the enum items to ensure Python has its own reference to it
+            choices = choices + list((intern(b.name),) * 3 for b in arm.data.bones)
+        # Storing the list of choices in bpy.types.Object.Enum doesn't seem to work properly for some reason, but we can
+        # use our own cache fine
+        _ENUM_CACHE = choices
+        return choices
+
     # Bone Mapping
     for bone_name in BONE_LIST:
-        def getbones(self, context):
-            choices = [('_None','_None','_None')]
-            arm = get_armature()
-            if arm is not None:
-                choices = choices + list((b.name, b.name, b.name) for b in arm.data.bones)
-            bpy.types.Object.Enum = choices
-            return bpy.types.Object.Enum
-
         prop = EnumProperty(
             name = bone_name.replace("_", " "),
             description = "Override for {} for when the bone is not automatically found.",
@@ -227,8 +222,13 @@ def draw_ui(context, layout):
         row.prop(bpy.context.scene, 'arm_thickness', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'leg_thickness', expand=True)
-        row = col.row(align=True)
+
+        split = col.row(align=True)
+        row = split.row(align=True)
         row.prop(bpy.context.scene, 'thigh_percentage', expand=True)
+        row = split.row(align=True)
+        row.alignment = 'RIGHT'
+        row.operator("armature.get_avatar_upper_leg_percent", text="", icon="EMPTY_SINGLE_ARROW")
 
         split = col.row(align=True)
         row = split.row(align=True)
@@ -242,8 +242,6 @@ def draw_ui(context, layout):
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'scale_eyes', expand=True)
         row = col.row(align=True)
-        # row.prop(bpy.context.scene, 'legacy_scaling', expand=True)
-        # row = col.row(align=True)
         row.prop(bpy.context.scene, 'imscale_show_bone_map', expand=True)
 
 
@@ -333,7 +331,6 @@ class ImmersiveScalerMenu(bpy.types.Panel):
 
 def ui_register():
     set_properties()
-    make_annotations(ImmersiveScalerMenu)
     bpy.utils.register_class(ImmersiveScalerMenu)
 
 def ui_unregister():

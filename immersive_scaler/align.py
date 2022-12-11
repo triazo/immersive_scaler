@@ -1,39 +1,6 @@
 import bpy
 import mathutils
 
-# IDK why but this class is necessary
-def make_annotations(cls):
-    bl_props = {k: v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
-    if bl_props:
-        if '__annotations__' not in cls.__dict__:
-            setattr(cls, '__annotations__', {})
-        annotations = cls.__dict__['__annotations__']
-        for k, v in bl_props.items():
-            annotations[k] = v
-            delattr(cls, k)
-    return cls
-
-def point_bone(bone, point):
-    v1 = (bone.tail - bone.head).normalized()
-    v2 = (bone.head - point).normalized()
-
-    # Need to transform the global rotation between the twe vectors
-    # into the local space of the bone
-    #
-    # Essentially, R_l = B @ R_g @ B^-1
-    # where
-    # R is the desired rotation (rotation_quat_pose)
-    #  R_l is the local rotaiton
-    #  R_g is the global rotation
-    #  B is the bone's global rotation
-    #  B^-1 is the inverse of the bone's rotation
-    rotation_quat_pose = v1.rotation_difference(v2)
-    bm = bone.matrix.to_quaternion()
-    bm.rotate(rotation_quat_pose)
-    bm.rotate(bone.matrix.inverted())
-
-    bone.rotation_quaternion = bm
-
 def align_bones(dest_bones, root_bone):
     if not root_bone.name in dest_bones:
         return
@@ -111,7 +78,6 @@ class ArmatureAlign(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(ArmatureAlign)
-    make_annotations(ArmatureAlign)
 
 def unregister():
     bpy.utils.unregister_class(ArmatureAlign)
