@@ -1,0 +1,9 @@
+
+# ignores for personal workflow
+Static
+immersive_scaler.zip
+todo.org
+
+# ignores for emacs garbage files
+*#*#
+
