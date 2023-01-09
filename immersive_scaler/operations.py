@@ -1,6 +1,7 @@
 import bpy
 import mathutils
 import math
+import importlib
 import numpy as np
 from typing import cast, List, Iterable
 from contextlib import contextmanager
@@ -364,6 +365,14 @@ def get_current_scaling(obj):
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
     return ratio
 
+def get_upper_body_percentage(arm):
+    eye_z = (get_bone_worldspace_z('left_eye', arm) + get_bone_worldspace_z('right_eye', arm)) / 2
+    neck_z = get_bone_worldspace_z('neck', arm)
+    leg_average_z = (get_bone_worldspace_z('left_leg', arm) + get_bone_worldspace_z('right_leg', arm)) / 2
+    lowest_point = get_lowest_point()
+
+    return (1 - (leg_average_z - lowest_point) / (eye_z - lowest_point)) * 100
+    
 
 def get_arm_length(obj, worldspace=True):
     """Get the length of the (right) arm as if its bones are fully straightened"""
@@ -877,7 +886,6 @@ def shrink_hips():
 
 _ZERO_ROTATION_QUATERNION = np.array([1, 0, 0, 0], dtype=np.single)
 
-
 def reset_current_pose(pose_bones):
     """Resets the location, scale and rotation of each pose bone to the rest pose."""
     num_bones = len(pose_bones)
@@ -1206,6 +1214,18 @@ class UIGetCurrentUpperLegPercent(ArmatureOperator):
         context.scene.thigh_percentage = current_thigh_percentage * 100.0
         return {'FINISHED'}
 
+class UIGetUpperBodyPercent(ArmatureOperator):
+    """Gets the percent of the avatars height used by upper body - from eyes to legs"""
+    bl_idname = "armature.get_upper_body_percentage"
+    bl_label = "Get Current Avatar Upper Body Percentage"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute_main(self, context, arm, meshes):
+        scale = get_upper_body_percentage(arm)
+        context.scene.upper_body_percentage = scale
+        return {'FINISHED'}
+
+
 
 _register, _unregister = bpy.utils.register_classes_factory([
     ArmatureRescale,
@@ -1214,6 +1234,7 @@ _register, _unregister = bpy.utils.register_classes_factory([
     UIGetCurrentHeight,
     UIGetScaleRatio,
     UIGetCurrentUpperLegPercent,
+    UIGetUpperBodyPercent,
 ])
 
 

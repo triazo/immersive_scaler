@@ -41,6 +41,17 @@ def set_properties():
         subtype = 'PERCENTAGE'
     )
 
+    Scene.upper_body_percentage = FloatProperty(
+        name = "Upper Body Percentage",
+        description = "Percentage of the distance from the eyes to the heel that should be taken up by the torso and neck",
+        default = 43,
+        step = 1,
+        precision = 3,
+        soft_min = 40,
+        soft_max = 75,
+        subtype = 'PERCENTAGE'
+    )
+
     Scene.arm_thickness = FloatProperty(
         name = "Arm Thickness",
         description = "How much arm thickness should be kept or added when scaling",
@@ -157,6 +168,7 @@ def set_properties():
     )
 
     # UI options
+    bpy.types.Scene.imscale_scale_upper_body = bpy.props.BoolProperty(name='Scale by Upper Body', default=True)
     bpy.types.Scene.imscale_show_customize = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_sf_custom = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
@@ -201,8 +213,25 @@ def draw_ui(context, layout):
     row.alignment = 'RIGHT'
     row.operator("armature.get_avatar_height", text="", icon="EMPTY_SINGLE_ARROW")
 
-    row = col.row(align=True)
-    row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
+    
+    if scn.imscale_scale_upper_body:
+        split = col.row(align=True)
+        # row = split.row(align=True)
+        # row.prop(scn, "imscale_scale_upper_body", icon="TRIA_RIGHT", text="", emboss=False)
+        row = split.row(align=True)
+        row.prop(bpy.context.scene, 'upper_body_percentage', expand=True)
+        row = split.row(align=True)
+        row.alignment = 'RIGHT'
+        row.operator("armature.get_upper_body_percentage", text="", icon="EMPTY_SINGLE_ARROW")
+    else:
+        row = col.row(align=True)
+        #row.prop(scn, "imscale_scale_upper_body", icon="TRIA_LEFT", text="", emboss=False)
+        row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
+
+    row = col.row(align=False)
+    row.prop(scn, "imscale_scale_upper_body", text="Scale by Absolute Proportions")
+
+    
     # These properties are defined, but not very useful
     # row = col.row(align=True)
     # row.prop(bpy.context.scene, 'scale_hand', expand=True)
