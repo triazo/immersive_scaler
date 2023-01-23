@@ -340,7 +340,7 @@ def get_highest_point():
         return highest_vertex_z
 
 
-def get_view_y(obj, custom_scale_ratio=.4537):
+def get_view_z(obj, custom_scale_ratio=.4537):
     # VRC uses the distance between the head bone and right hand in
     # t-pose as the basis for world scale.
 
@@ -350,9 +350,9 @@ def get_view_y(obj, custom_scale_ratio=.4537):
     # Magic that somebody posted in discord. I'm going to just assume
     # these constants are correct. Testing shows it's at least pretty
     # darn close
-    view_y = (head_to_hand(obj) / custom_scale_ratio) + .005
+    view_z = (head_to_hand(obj) / custom_scale_ratio) + .005
 
-    return view_y
+    return view_z
 
 
 def get_current_scaling(obj):
@@ -365,14 +365,14 @@ def get_current_scaling(obj):
     bpy.ops.object.mode_set(mode='POSE', toggle = True)
     return ratio
 
-def get_upper_body_percentage(arm):
+def get_upper_body_portion(arm):
     eye_z = (get_bone_worldspace_z('left_eye', arm) + get_bone_worldspace_z('right_eye', arm)) / 2
     neck_z = get_bone_worldspace_z('neck', arm)
     leg_average_z = (get_bone_worldspace_z('left_leg', arm) + get_bone_worldspace_z('right_leg', arm)) / 2
     lowest_point = get_lowest_point()
 
-    return (1 - (leg_average_z - lowest_point) / (eye_z - lowest_point)) * 100
-    
+    return (1 - (leg_average_z - lowest_point) / (eye_z - lowest_point))
+
 
 def get_arm_length(obj, worldspace=True):
     """Get the length of the (right) arm as if its bones are fully straightened"""
@@ -415,7 +415,7 @@ def head_to_hand(obj, worldspace=True):
     """
     head_to_hand is the distance from headpos to (upper_arm - (arm_length, 0, 0))
     (please excuse the poorly drawn triangles)
-    
+
     Avatar as seen from the front:
                                       head_to_hand   ¸ . o headpos
                                            ¸ . - ' `    /
@@ -427,7 +427,7 @@ def head_to_hand(obj, worldspace=True):
                          head_to_hand   ¸ . o (headpos - upper_arm)
                               ¸ . - ' `    /
     (-arm_length, 0, 0) o ' ` - - - - - - o (0,0,0)
-    
+
     head_to_hand
      = ((headpos - upper_arm) - (-arm_length, 0, 0)).length
     Could be further simplified:
@@ -628,7 +628,33 @@ def start_pose_mode_with_reset(arm):
     arm.data.pose_position = 'POSE'
 
 
-def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio):
+# def scale_absolute(upper_body_percent, arm_thickness_change, leg_thickness_change, scale_hand, thigh_percentage, custom_scale_ratio):
+#     # Similar in purpose to scale_to_floor, now looking at torso size too.
+#     #
+#     arm = get_armature()
+
+#     start_pose_mode_with_reset(arm)
+
+#     lowest_point = get_lowest_point()
+
+#     view_z = get_view_z(arm, custom_scale_ratio)
+#     eye_z = get_eye_height(arm) - lowest_point
+
+#     rescale_ratio = eye_z / view_z
+
+#     leg_portion = get_leg_length(arm) / eye_z
+
+#     # This is where it starts to differ from scale_to_floor
+#     # Find how much the legs need to scale by to meet the target
+#     leg_scale_ratio = upper_body_percent / get_upper_body_percentage(arm)
+
+#     rescale_leg_ratio = 1 / (leg_portion * leg_scale_ratio)
+#     rescale_arm_ratio = rescale_ratio / rescale_leg_ratio
+
+#     arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio)
+
+
+def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_absolute, upper_body_portion):
     arm = get_armature()
 
     # Possibly for these scale calculation parts, before we adjust any bones, we could change the armature pose to
@@ -637,21 +663,37 @@ def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, 
 
     lowest_point = get_lowest_point()
 
-    view_y = get_view_y(arm, custom_scale_ratio) + extra_leg_length
-    eye_y = get_eye_height(arm) - lowest_point
+    view_z = get_view_z(arm, custom_scale_ratio) + extra_leg_length
+    eye_z = get_eye_height(arm) - lowest_point
 
     # TODO: add an option for people who *want* their legs below the floor.
     #
     # weirdos
-    rescale_ratio = eye_y / view_y
-    leg_height_portion = get_leg_length(arm) / eye_y
+    rescale_ratio = eye_z / view_z
+    leg_height_portion = get_leg_length(arm) / eye_z
 
-    # Enforces: rescale_leg_ratio * rescale_arm_ratio = rescale_ratio
-    rescale_leg_ratio = rescale_ratio ** arm_to_legs
-    rescale_arm_ratio = rescale_ratio ** (1-arm_to_legs)
 
-    leg_scale_ratio = 1 - (1 - (1/rescale_leg_ratio)) / leg_height_portion
+    if not scale_absolute:
+        # Supposedly the same as below but I don't think that's
+        # actually how this math works
+        rescale_leg_ratio = rescale_ratio ** arm_to_legs
+        rescale_arm_ratio = rescale_ratio ** (1-arm_to_legs)
+        leg_scale_ratio = 1 - (1 - (1/rescale_leg_ratio)) / leg_height_portion
+    else:
+        ubp = get_upper_body_portion(arm)
+        ub_scale_ratio = ubp / upper_body_portion
+        leg_scale_ratio = ub_scale_ratio + ((ub_scale_ratio * ubp - ubp) / (leg_height_portion))
+
+        # Enforces: rescale_leg_ratio * rescale_arm_ratio = rescale_ratio
+        print("==============================")
+        print("leg scale ratio: %f, %f, %f" % (ub_scale_ratio, ubp, leg_scale_ratio))
+        #rescale_leg_ratio = 1 / (leg_height_portion * leg_scale_ratio)
+        rescale_leg_ratio = 1 / (leg_height_portion * (leg_scale_ratio - 1) + 1)
+        rescale_arm_ratio = rescale_ratio / rescale_leg_ratio
+
+    #
     arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio)
+
 
     print("Total required scale factor is %f" % rescale_ratio)
     print("Scaling legs by a factor of %f to %f" % (leg_scale_ratio, leg_scale_ratio * get_leg_length(arm)))
@@ -792,13 +834,13 @@ def center_model(worldspace=True):
         arm.matrix_local.translation = (0, 0, 0)
 
 
-def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_eyes):
+def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_eyes, scale_absolute, upper_body_percent):
     context = bpy.context
     s = context.scene
 
 
     if not s.debug_no_adjust:
-        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio)
+        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_absolute, upper_body_percent)
     if not s.debug_no_floor:
         move_to_floor()
 
@@ -1123,6 +1165,8 @@ class ArmatureRescale(ArmatureOperator):
             self.thigh_percentage / 100.0,
             self.custom_scale_ratio,
             self.scale_eyes,
+            self.scale_upper_body,
+            self.upper_body_percentage / 100,
         )
         return {'FINISHED'}
 
@@ -1137,7 +1181,8 @@ class ArmatureRescale(ArmatureOperator):
         self.thigh_percentage = s.thigh_percentage
         self.custom_scale_ratio = s.custom_scale_ratio
         self.scale_eyes = s.scale_eyes
-
+        self.scale_upper_body = s.imscale_scale_upper_body
+        self.upper_body_percentage = s.upper_body_percentage
 
         return self.execute(context)
 
@@ -1221,7 +1266,7 @@ class UIGetUpperBodyPercent(ArmatureOperator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute_main(self, context, arm, meshes):
-        scale = get_upper_body_percentage(arm)
+        scale = get_upper_body_portion(arm) * 100
         context.scene.upper_body_percentage = scale
         return {'FINISHED'}
 

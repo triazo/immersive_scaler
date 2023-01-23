@@ -44,10 +44,10 @@ def set_properties():
     Scene.upper_body_percentage = FloatProperty(
         name = "Upper Body Percentage",
         description = "Percentage of the distance from the eyes to the heel that should be taken up by the torso and neck",
-        default = 43,
+        default = 44,
         step = 1,
         precision = 3,
-        soft_min = 40,
+        soft_min = 30,
         soft_max = 75,
         subtype = 'PERCENTAGE'
     )
@@ -168,7 +168,7 @@ def set_properties():
     )
 
     # UI options
-    bpy.types.Scene.imscale_scale_upper_body = bpy.props.BoolProperty(name='Scale by Upper Body', default=True)
+    bpy.types.Scene.imscale_scale_upper_body = bpy.props.BoolProperty(name='Scale by Upper Body', default=True, description="Works better for upper lock all mode in vrc")
     bpy.types.Scene.imscale_show_customize = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_sf_custom = bpy.props.BoolProperty(name='Show customize panel', default=False)
     bpy.types.Scene.imscale_show_debug = bpy.props.BoolProperty(name='Show debug panel', default=False)
@@ -213,7 +213,7 @@ def draw_ui(context, layout):
     row.alignment = 'RIGHT'
     row.operator("armature.get_avatar_height", text="", icon="EMPTY_SINGLE_ARROW")
 
-    
+
     if scn.imscale_scale_upper_body:
         split = col.row(align=True)
         # row = split.row(align=True)
@@ -231,7 +231,7 @@ def draw_ui(context, layout):
     row = col.row(align=False)
     row.prop(scn, "imscale_scale_upper_body", text="Scale by Absolute Proportions")
 
-    
+
     # These properties are defined, but not very useful
     # row = col.row(align=True)
     # row.prop(bpy.context.scene, 'scale_hand', expand=True)
@@ -266,8 +266,17 @@ def draw_ui(context, layout):
         row.alignment = 'RIGHT'
         row.operator("armature.get_scale_ratio", text="", icon="EMPTY_SINGLE_ARROW")
 
-        row = col.row(align=True)
-        row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
+        if not scn.imscale_scale_upper_body:
+            # Depricating this because
+            # - It's in non-intuitive and not useful pre-scaling units
+            # - It's somewhat redundant with 'custom arm ratio'
+            #
+            # Idea to revisit eventually: tacking on a set amount of
+            # height for say, high heels or roller blades, that would
+            # be below the origin and not counted in scaling. Maybe an
+            # offset to get_lowest_point?
+            row = col.row(align=True)
+            row.prop(bpy.context.scene, 'extra_leg_length', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'scale_eyes', expand=True)
         row = col.row(align=True)

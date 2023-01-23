@@ -70,15 +70,26 @@ Options are:
   extra leg length. The button on the right retrieves the current
   height and sets the target height parameter to match.
 
-- **Leg/Arm Scaling**: If rescaling needs to be done, how much should the
-  legs be changed (shortened, most of the time), and how much should
-  the arms be changed (lengthened, most of the time). A value of 1
-  will only affect the legs, and a value of 0 will only affect the
-  arms. This works outside of the range zero to one, but will probably
-  look weird.
+- **Upper Body Percent**: Sets how much of the avatar should be taken
+  by the upper body (the eyes to the hips). A lower value here will
+  have longer legs. Typically human portion models will have a portion
+  of 42 to 45 percent with more stylized models with longer legs going
+  below 40 percent at the cost of accuracy of fit.
+
+- **Leg/Arm Scaling**: (legacy) If rescaling needs to be done, how
+  much should the legs be changed (shortened, most of the time), and
+  how much should the arms be changed (lengthened, most of the
+  time). A value of 1 will only affect the legs, and a value of 0 will
+  only affect the arms. This works outside of the range zero to one,
+  but will probably look weird.
 
   This is the first option to tweak if you don't like how your avatar
   looks.
+
+- **Scale by Absolute Proportions**: Decides which of **Upper Body
+  Percent** and **Leg/Arm Scaling** is used to decide on avatar
+  scale. Upper Body Percent will lead to more consistent fitting
+  across avatars.
 
 - **Arm Thickness**: When making the arms longer (or shorter), this
   determines how much the other axis should be scaled to match the
@@ -95,7 +106,7 @@ Options are:
   and the foot, what percentage should be used by the thigh, vs the
   calf. This helps get the knee in the right place when using full
   body.
-  
+
 - **Custom Arm Ratio**: This option corresponds to vrchat's
   `--custom-arm-ratio` launch option. When the number provided here
   matches the number passed as an argument (or the default, 0.4537),
