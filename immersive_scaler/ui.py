@@ -213,24 +213,23 @@ def draw_ui(context, layout):
     row.alignment = 'RIGHT'
     row.operator("armature.get_avatar_height", text="", icon="EMPTY_SINGLE_ARROW")
 
-
     if scn.imscale_scale_upper_body:
+        row = col.row(align=True)
+        row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
+    else:
         split = col.row(align=True)
-        # row = split.row(align=True)
-        # row.prop(scn, "imscale_scale_upper_body", icon="TRIA_RIGHT", text="", emboss=False)
         row = split.row(align=True)
         row.prop(bpy.context.scene, 'upper_body_percentage', expand=True)
         row = split.row(align=True)
         row.alignment = 'RIGHT'
         row.operator("armature.get_upper_body_percentage", text="", icon="EMPTY_SINGLE_ARROW")
-    else:
-        row = col.row(align=True)
-        #row.prop(scn, "imscale_scale_upper_body", icon="TRIA_LEFT", text="", emboss=False)
-        row.prop(bpy.context.scene, 'arm_to_legs', expand=True)
 
-    row = col.row(align=False)
-    row.prop(scn, "imscale_scale_upper_body", text="Scale by Absolute Proportions")
-
+    split = col.row(align=True)
+    row = split.row(align=True)
+    row.prop(bpy.context.scene, 'custom_scale_ratio', expand=True)
+    row = split.row(align=True)
+    row.alignment = 'RIGHT'
+    row.operator("armature.get_scale_ratio", text="", icon="EMPTY_SINGLE_ARROW")
 
     # These properties are defined, but not very useful
     # row = col.row(align=True)
@@ -259,14 +258,8 @@ def draw_ui(context, layout):
         row.alignment = 'RIGHT'
         row.operator("armature.get_avatar_upper_leg_percent", text="", icon="EMPTY_SINGLE_ARROW")
 
-        split = col.row(align=True)
-        row = split.row(align=True)
-        row.prop(bpy.context.scene, 'custom_scale_ratio', expand=True)
-        row = split.row(align=True)
-        row.alignment = 'RIGHT'
-        row.operator("armature.get_scale_ratio", text="", icon="EMPTY_SINGLE_ARROW")
 
-        if not scn.imscale_scale_upper_body:
+        if scn.imscale_scale_upper_body:
             # Depricating this because
             # - It's in non-intuitive and not useful pre-scaling units
             # - It's somewhat redundant with 'custom arm ratio'
@@ -297,6 +290,8 @@ def draw_ui(context, layout):
         row.prop(bpy.context.scene, 'debug_no_floor', expand=True)
         row = col.row(align=True)
         row.prop(bpy.context.scene, 'debug_no_scale', expand=True)
+        row = col.row(align=False)
+        row.prop(scn, "imscale_scale_upper_body", text="Scale by Relative Proportions")
 
     row = col.row(align=True)
     row.label(text="-------------")

@@ -654,7 +654,7 @@ def start_pose_mode_with_reset(arm):
 #     arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio)
 
 
-def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_absolute, upper_body_portion):
+def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_relative, upper_body_portion):
     arm = get_armature()
 
     # Possibly for these scale calculation parts, before we adjust any bones, we could change the armature pose to
@@ -673,7 +673,7 @@ def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, 
     leg_height_portion = get_leg_length(arm) / eye_z
 
 
-    if not scale_absolute:
+    if scale_relative:
         # Supposedly the same as below but I don't think that's
         # actually how this math works
         rescale_leg_ratio = rescale_ratio ** arm_to_legs
@@ -683,11 +683,6 @@ def scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, 
         ubp = get_upper_body_portion(arm)
         ub_scale_ratio = ubp / upper_body_portion
         leg_scale_ratio = ub_scale_ratio + ((ub_scale_ratio * ubp - ubp) / (leg_height_portion))
-
-        # Enforces: rescale_leg_ratio * rescale_arm_ratio = rescale_ratio
-        print("==============================")
-        print("leg scale ratio: %f, %f, %f" % (ub_scale_ratio, ubp, leg_scale_ratio))
-        #rescale_leg_ratio = 1 / (leg_height_portion * leg_scale_ratio)
         rescale_leg_ratio = 1 / (leg_height_portion * (leg_scale_ratio - 1) + 1)
         rescale_arm_ratio = rescale_ratio / rescale_leg_ratio
 
@@ -834,13 +829,13 @@ def center_model(worldspace=True):
         arm.matrix_local.translation = (0, 0, 0)
 
 
-def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_eyes, scale_absolute, upper_body_percent):
+def rescale_main(new_height, arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_eyes, scale_relative, upper_body_percent):
     context = bpy.context
     s = context.scene
 
 
     if not s.debug_no_adjust:
-        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_absolute, upper_body_percent)
+        scale_to_floor(arm_to_legs, arm_thickness, leg_thickness, extra_leg_length, scale_hand, thigh_percentage, custom_scale_ratio, scale_relative, upper_body_percent)
     if not s.debug_no_floor:
         move_to_floor()
 

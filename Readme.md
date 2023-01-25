@@ -76,20 +76,8 @@ Options are:
   of 42 to 45 percent with more stylized models with longer legs going
   below 40 percent at the cost of accuracy of fit.
 
-- **Leg/Arm Scaling**: (legacy) If rescaling needs to be done, how
-  much should the legs be changed (shortened, most of the time), and
-  how much should the arms be changed (lengthened, most of the
-  time). A value of 1 will only affect the legs, and a value of 0 will
-  only affect the arms. This works outside of the range zero to one,
-  but will probably look weird.
 
-  This is the first option to tweak if you don't like how your avatar
-  looks.
 
-- **Scale by Absolute Proportions**: Decides which of **Upper Body
-  Percent** and **Leg/Arm Scaling** is used to decide on avatar
-  scale. Upper Body Percent will lead to more consistent fitting
-  across avatars.
 
 - **Arm Thickness**: When making the arms longer (or shorter), this
   determines how much the other axis should be scaled to match the
@@ -150,6 +138,24 @@ Options are:
 - **Skip Height Scaling**: The avatar will not be scaled to height, and
   will keep the height it had after resizing the legs and moving the
   avatar to the floor.
+
+- **Scale by Relative Proportions**: Instead of scaling the torso and
+  legs to a fixed ratio, lets you decide how much of the total scaling
+  needed happens in the legs vs happens in the arms. Replaces the
+  **Upper Body Percent** option with the **Leg/Arm Scaling**
+  option. Upper Body Percent will lead to more consistent fitting
+  across avatars and is the default.
+
+- **Leg/Arm Scaling**: (legacy) If rescaling needs to be done, how
+  much should the legs be changed (shortened, most of the time), and
+  how much should the arms be changed (lengthened, most of the
+  time). A value of 1 will only affect the legs, and a value of 0 will
+  only affect the arms. This works outside of the range zero to one,
+  but will probably look weird.
+
+  This is the first option to tweak if you don't like how your avatar
+  looks.
+
 
 
 
