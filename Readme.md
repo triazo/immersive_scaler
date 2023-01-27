@@ -76,8 +76,15 @@ Options are:
   of 42 to 45 percent with more stylized models with longer legs going
   below 40 percent at the cost of accuracy of fit.
 
-
-
+- **Custom Arm Ratio**: Basically, how long your arms are relative to
+  your height. This option corresponds to vrchat's
+  `--custom-arm-ratio` launch option. When the number provided here
+  matches the number passed as an argument (or the default, 0.4537),
+  scale by arm mode should be identical to scale by height mode. This
+  option is useful to quickly get an avatar with arms that are the
+  right length. The default is vrchat's default but it's reccomended
+  to lower it a tiny bit to match your own preference. I personally go
+  around 0.43, and 0.415 was used in a previous vrchat beta.
 
 - **Arm Thickness**: When making the arms longer (or shorter), this
   determines how much the other axis should be scaled to match the
@@ -94,15 +101,6 @@ Options are:
   and the foot, what percentage should be used by the thigh, vs the
   calf. This helps get the knee in the right place when using full
   body.
-
-- **Custom Arm Ratio**: This option corresponds to vrchat's
-  `--custom-arm-ratio` launch option. When the number provided here
-  matches the number passed as an argument (or the default, 0.4537),
-  scale by arm mode should be identical to scale by height mode. This
-  option is useful to quickly get an avatar with arms that are the
-  right length. The default is vrchat's default but it's reccomended
-  to lower it a tiny bit to match your own preference. I personally go
-  around 0.43, and 0.415 was used in a previous vrchat beta.
 
 - **Extra Leg Length**: In case no configuration where the avatar's
   feet touch the floor looks any good, you can have the avatar's feet
