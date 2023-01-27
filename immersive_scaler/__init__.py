@@ -2,7 +2,7 @@
 #
 # (global-set-key (kbd "C-c b") (lambda () (interactive) (shell-command "zip -r ../immersive_scaler.zip ../immersive_scaler")))
 #
-# 
+#
 
 import importlib
 importlib.invalidate_caches()
@@ -23,7 +23,7 @@ bl_info = {
     "name": "Immersive Scaler",
     "category": "3D View",
     'author': 'triazo',
-    'version': (0, 3, 1),
+    'version': (0, 4, 0),
     'blender': (2, 81, 0),
     'location': 'View3D',
 }
