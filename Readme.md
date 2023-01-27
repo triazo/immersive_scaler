@@ -62,7 +62,7 @@ I've just observed weird behavior when run against armatures without
 this), and hit the 'Rescale Armature' button. Tweak options as necessary.
 
 
-![UI](https://triazo.net/files/blender_2021-10-05_17-08-04.png)
+![UI](https://triazo.net/files/screenie_2023-01-26_22-28-48.png)
 
 Options are:
 
