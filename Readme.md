@@ -1,4 +1,4 @@
-Immersive Scaler
+\Immersive Scaler
 ===========
 Fine tuned automated avatar scaling, for vrchat
 
@@ -188,6 +188,6 @@ downloaded from the releases page.
 ## Contact
 
 If you have any questions, encounter an error, or just want to say hi,
-send me a ping on discord at triazo#9607.
+send me a ping on discord at pager#0001.
 
 If you like this plugin and think it's useful, spread the word!
