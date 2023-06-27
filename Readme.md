@@ -1,4 +1,4 @@
-\Immersive Scaler
+Immersive Scaler
 ===========
 Fine tuned automated avatar scaling, for vrchat
 
