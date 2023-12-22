@@ -1099,7 +1099,7 @@ def apply_pose_to_rest(preserve_volume=False):
     # active object e.g., the user has multiple armatures opened in pose mode, but a different armature is currently
     # active. We can use an operator override to tell the operator to treat armature_obj as if it's the active
     # object even if it's not, skipping the need to actually set armature_obj as the active object.
-    bpy.ops.pose.armature_apply({'active_object': arm})
+    op_override(bpy.ops.pose.armature_apply, {"active_object": arm})
 
 
 class ArmatureOperator(bpy.types.Operator):
