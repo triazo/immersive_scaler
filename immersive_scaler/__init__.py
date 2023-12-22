@@ -5,6 +5,7 @@
 #
 
 import importlib
+
 importlib.invalidate_caches()
 
 # import immersive_scaler.operations as imops
@@ -22,11 +23,12 @@ from . import operations as imops
 bl_info = {
     "name": "Immersive Scaler",
     "category": "3D View",
-    'author': 'triazo',
-    'version': (0, 4, 0),
-    'blender': (2, 81, 0),
-    'location': 'View3D',
+    "author": "pager",
+    "version": (0, 4, 2),
+    "blender": (2, 81, 0),
+    "location": "View3D",
 }
+
 
 def register():
     print(__name__)
@@ -34,6 +36,7 @@ def register():
     importlib.reload(imops)
     imui.ui_register()
     imops.ops_register()
+
 
 def unregister():
     imui.ui_unregister()
