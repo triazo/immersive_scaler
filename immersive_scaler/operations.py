@@ -3,143 +3,28 @@ import mathutils
 import math
 import importlib
 import numpy as np
-from typing import cast, List, Iterable
-from contextlib import contextmanager
+from typing import List, Iterable
 
-from .common import get_armature, op_override, children_recursive
+from . import common
+from . import posemode
+from . import bones
 
+importlib.reload(common)
+importlib.reload(bones)
+importlib.reload(posemode)
 
-def obj_in_scene(obj):
-    for o in bpy.context.view_layer.objects:
-        if o is obj:
-            return True
-    return False
+from .common import (
+    get_armature,
+    op_override,
+    children_recursive,
+    ArmatureOperator,
+    get_body_meshes,
+    obj_in_scene,
+    temp_ensure_enabled,
+)
 
-
-def get_body_meshes():
-    arm = get_armature()
-    meshes = []
-    for c in arm.children:
-        if not obj_in_scene(c):
-            continue
-        if len(c.users_scene) == 0:
-            continue
-        if c.type == "MESH":
-            meshes.append(c)
-    return meshes
-
-
-@contextmanager
-def temp_ensure_enabled(*objs: bpy.types.Object):
-    """Ensure that objs are enabled in the current scene by setting hide_viewport to False and adding then to the scene
-    collection. Once done, clean up by restoring the hide_viewport value and removing objs from the scene collection if
-    they were not already in the scene collection.
-    It should be safe to delete or rename the objects and/or scene within the 'with' statement.
-    """
-    scene = bpy.context.scene
-
-    # Remove any duplicates from the list of objects
-    unique_objs = []
-    found_objs = set()
-    for obj in objs:
-        if obj not in found_objs:
-            unique_objs.append(obj)
-            found_objs.add(obj)
-
-    old_hide_viewports = [obj.hide_viewport for obj in unique_objs]
-
-    added_to_collections = []
-    try:
-        objects = scene.collection.objects
-        for obj in unique_objs:
-            obj.hide_viewport = False
-            if obj.name not in objects:
-                objects.link(obj)
-                added_to_collections.append(True)
-            else:
-                added_to_collections.append(False)
-        yield
-    finally:
-        for obj, old_hide_viewport, added_to_collection in zip(
-            unique_objs, old_hide_viewports, added_to_collections
-        ):
-            try:
-                # While we could do `if old_hide_viewport: obj.hide_viewport = True`, this wouldn't always check that
-                # obj is still a valid reference.
-                obj.hide_viewport = old_hide_viewport
-
-                if added_to_collection:
-                    try:
-                        objects = scene.collection.objects
-                        if obj.name in objects:
-                            objects.unlink(obj)
-                    except ReferenceError:
-                        # scene has been deleted
-                        pass
-            except ReferenceError:
-                # obj has been deleted
-                pass
-
-
-bone_names = {
-    "right_shoulder": ["rightshoulder", "shoulderr", "rshoulder"],
-    "right_arm": ["rightarm", "armr", "rarm", "upperarmr", "rightupperarm"],
-    "right_elbow": [
-        "rightelbow",
-        "elbowr",
-        "relbow",
-        "lowerarmr",
-        "rightlowerarm",
-        "lowerarmr",
-        "forearmr",
-    ],
-    "right_wrist": ["rightwrist", "wristr", "rwrist", "handr", "righthand"],
-    "right_leg": ["rightleg", "legr", "rleg", "upperlegr", "thighr", "rightupperleg"],
-    "right_knee": [
-        "rightknee",
-        "kneer",
-        "rknee",
-        "lowerlegr",
-        "calfr",
-        "rightlowerleg",
-        "shinr",
-    ],
-    "right_ankle": [
-        "rightankle",
-        "ankler",
-        "rankle",
-        "rightfoot",
-        "footr",
-        "rightfoot",
-    ],
-    "right_eye": ["eyer", "righteye", "eyeright", "righteye001"],
-    "left_shoulder": ["leftshoulder", "shoulderl", "lshoulder"],
-    "left_arm": ["leftarm", "arml", "larm", "upperarml", "leftupperarm"],
-    "left_elbow": [
-        "leftelbow",
-        "elbowl",
-        "lelbow",
-        "lowerarml",
-        "leftlowerarm",
-        "lowerarml",
-        "forearml",
-    ],
-    "left_wrist": ["leftwrist", "wristl", "lwrist", "handl", "lefthand"],
-    "left_leg": ["leftleg", "legl", "lleg", "upperlegl", "thighl", "leftupperleg"],
-    "left_knee": [
-        "leftknee",
-        "kneel",
-        "lknee",
-        "lowerlegl",
-        "calfl",
-        "shinl",
-        "leftlowerleg",
-    ],
-    "left_ankle": ["leftankle", "anklel", "lankle", "leftfoot", "footl", "leftfoot"],
-    "left_eye": ["eyel", "lefteye", "eyeleft", "lefteye001"],
-    "head": ["head"],
-    "neck": ["neck"],
-}
+from .bones import *
+from .posemode import *
 
 
 def get_bone_worldspace_z(name, arm):
@@ -148,25 +33,6 @@ def get_bone_worldspace_z(name, arm):
     This convenience method will return the worldspace z position of the head of a bone.
     """
     return (arm.matrix_world @ get_bone(name, arm).head).z
-
-
-def get_bone(name, arm):
-    # First check that there's no override
-    s = bpy.context.scene
-    override = getattr(s, "override_" + name)
-    if override != "_None":
-        return arm.pose.bones[override]
-    name_list = bone_names[name]
-    bone_lookup = dict(
-        [
-            (bone.name.lower().translate(dict.fromkeys(map(ord, " _."))), bone)
-            for bone in arm.pose.bones
-        ]
-    )
-    for n in name_list:
-        if n in bone_lookup:
-            return bone_lookup[n]
-    return arm.pose.bones[name]
 
 
 if hasattr(bpy.types.bpy_prop_array, "foreach_get"):
@@ -710,26 +576,6 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
     #     arm.data.bones[b].inherit_scale = saved_bone_inherit_scales[b]
 
 
-def start_pose_mode_with_reset(arm):
-    """Replacement for Cats 'start pose mode' operator"""
-    vl_objects = bpy.context.view_layer.objects
-    if vl_objects.active != arm:
-        if bpy.context.mode != "OBJECT":
-            # Exit to OBJECT mode with whatever is the currently active object
-            bpy.ops.object.mode_set(mode="OBJECT")
-        # Set the armature as the active object
-        vl_objects.active = arm
-
-    if arm.mode != "POSE":
-        # Open the armature in pose mode
-        bpy.ops.object.mode_set(mode="POSE")
-
-    # Clear the current pose of the armature (doesn't require POSE mode, just must not be in EDIT mode)
-    reset_current_pose(arm.pose.bones)
-    # Ensure that the armature data is set to pose position, otherwise setting a pose has no effect
-    arm.data.pose_position = "POSE"
-
-
 # def scale_absolute(upper_body_percent, arm_thickness_change, leg_thickness_change, scale_hand, thigh_percentage, custom_scale_ratio):
 #     # Similar in purpose to scale_to_floor, now looking at torso size too.
 #     #
@@ -995,53 +841,6 @@ def rescale_main(
     bpy.ops.object.select_all(action="DESELECT")
 
 
-def point_bone(bone, point, spread_factor):
-    v1 = (bone.tail - bone.head).normalized()
-    v2 = (bone.head - point).normalized()
-
-    # Need to transform the global rotation between the two vectors
-    # into the local space of the bone
-    #
-    # Essentially, R_l = B @ R_g @ B^-1
-    # where
-    # R is the desired rotation (rotation_quat_pose)
-    #  R_l is the local rotaiton
-    #  R_g is the global rotation
-    #  B is the bone's global rotation
-    #  B^-1 is the inverse of the bone's rotation
-    rotation_quat_pose = v1.rotation_difference(v2)
-
-    newbm = bone.matrix.to_quaternion()
-
-    # Run the actual rotation twice to give us more range on the
-    # rotation. The slerp should exactly remove one of these by
-    # default, basically letting us extrapolate a bit.
-    newbm.rotate(rotation_quat_pose)
-    newbm.rotate(rotation_quat_pose)
-
-    newbm.rotate(bone.matrix.inverted())
-
-    oldbm = bone.matrix.to_quaternion()
-    oldbm.rotate(bone.matrix.inverted())
-
-    finalbm = oldbm.slerp(newbm, spread_factor / 2)
-
-    bone.rotation_quaternion = finalbm
-
-
-def spread_fingers(spare_thumb, spread_factor):
-    obj = get_armature()
-    start_pose_mode_with_reset(obj)
-    for hand in [get_bone("right_wrist", obj), get_bone("left_wrist", obj)]:
-        for finger in hand.children:
-            if "thumb" in finger.name.lower() and spare_thumb:
-                continue
-            point_bone(finger, hand.head, spread_factor)
-    apply_pose_to_rest()
-    bpy.ops.object.mode_set(mode="OBJECT")
-    bpy.ops.object.select_all(action="DESELECT")
-
-
 def shrink_hips():
     arm = get_armature()
 
@@ -1066,251 +865,6 @@ def shrink_hips():
 
     bpy.ops.object.mode_set(mode="EDIT", toggle=True)
     bpy.ops.object.select_all(action="DESELECT")
-
-
-_ZERO_ROTATION_QUATERNION = np.array([1, 0, 0, 0], dtype=np.single)
-
-
-def reset_current_pose(pose_bones):
-    """Resets the location, scale and rotation of each pose bone to the rest pose."""
-    num_bones = len(pose_bones)
-    # 3 components: X, Y, Z, set each bone to (0,0,0)
-    pose_bones.foreach_set("location", np.zeros(num_bones * 3, dtype=np.single))
-    # 3 components: X, Y, Z, set each bone to (1,1,1)
-    pose_bones.foreach_set("scale", np.ones(num_bones * 3, dtype=np.single))
-    # 4 components: W, X, Y, Z, set each bone to (1, 0, 0, 0)
-    pose_bones.foreach_set(
-        "rotation_quaternion", np.tile(_ZERO_ROTATION_QUATERNION, num_bones)
-    )
-
-
-def _create_armature_mod_for_apply(armature_obj, mesh_obj, preserve_volume):
-    armature_mod = cast(
-        bpy.types.ArmatureModifier,
-        mesh_obj.modifiers.new("IMScalePoseToRest", "ARMATURE"),
-    )
-    armature_mod.object = armature_obj
-    # Rotating joints tends to scale down neighboring geometry, up to nearly zero at 180 degrees from rest position. By
-    # enabling Preserve Volume, this no longer happens, but there is a 'gap', a discontinuity when going past 180
-    # degrees (presumably the rotation effectively jumps to negative when going past 180 degrees)
-    # This does have an effect when scaling bones, but it's unclear if it's a beneficial effect or even noticeable in
-    # most cases.
-    armature_mod.use_deform_preserve_volume = preserve_volume
-    return armature_mod
-
-
-def _apply_armature_to_mesh_with_no_shape_keys(armature_obj, mesh_obj, preserve_volume):
-    armature_mod = _create_armature_mod_for_apply(
-        armature_obj, mesh_obj, preserve_volume
-    )
-    me = mesh_obj.data
-    if me.users > 1:
-        # Can't apply modifiers to multi-user data, so make a copy of the mesh and set it as the object's data
-        me = me.copy()
-        mesh_obj.data = me
-    # In the unlikely case that there was already a modifier with the same name as the new modifier, the new
-    # modifier will have ended up with a different name
-    mod_name = armature_mod.name
-    # Context override to let us run the modifier operators on mesh_obj, even if it's not the active object
-    context_override = {"object": mesh_obj}
-    # Moving the modifier to the first index will prevent an Info message about the applied modifier not being
-    # first and potentially having unexpected results.
-    if bpy.app.version >= (2, 90, 0):
-        # modifier_move_to_index was added in Blender 2.90
-        op_override(
-            bpy.ops.object.modifier_move_to_index,
-            context_override,
-            modifier=mod_name,
-            index=0,
-        )
-    else:
-        # The newly created modifier will be at the bottom of the list
-        armature_mod_index = len(mesh_obj.modifiers) - 1
-        # Move the modifier up until it's at the top of the list
-        for _ in range(armature_mod_index):
-            op_override(
-                bpy.ops.object.modifier_move_up, context_override, modifier=mod_name
-            )
-    op_override(bpy.ops.object.modifier_apply, context_override, modifier=mod_name)
-
-
-def _apply_armature_to_mesh_with_shape_keys(armature_obj, mesh_obj, preserve_volume):
-    # The active shape key will be changed, so save the current active index, so it can be restored afterwards
-    old_active_shape_key_index = mesh_obj.active_shape_key_index
-
-    # Shape key pinning shows the active shape key in the viewport without blending; effectively what you see when
-    # in edit mode. Combined with an armature modifier, we can use this to figure out the correct positions for all
-    # the shape keys.
-    # Save the current value, so it can be restored afterwards.
-    old_show_only_shape_key = mesh_obj.show_only_shape_key
-    mesh_obj.show_only_shape_key = True
-
-    # Temporarily remove vertex_groups from and disable mutes on shape keys because they affect pinned shape keys
-    me = mesh_obj.data
-    if me.users > 1:
-        # Imagine two objects in different places with the same mesh data. Both objects can move different amounts
-        # (they can even have completely different vertex groups), but we can only apply the movement to one of these
-        # objects, so create a copy and set that copy as mesh_obj's data.
-        me = me.copy()
-        mesh_obj.data = me
-    shape_key_vertex_groups = []
-    shape_key_mutes = []
-    key_blocks = me.shape_keys.key_blocks
-    for shape_key in key_blocks:
-        shape_key_vertex_groups.append(shape_key.vertex_group)
-        shape_key.vertex_group = ""
-        shape_key_mutes.append(shape_key.mute)
-        shape_key.mute = False
-
-    # Temporarily disable all modifiers from showing in the viewport so that they have no effect
-    mods_to_reenable_viewport = []
-    for mod in mesh_obj.modifiers:
-        if mod.show_viewport:
-            mod.show_viewport = False
-            mods_to_reenable_viewport.append(mod)
-
-    # Temporarily add a new armature modifier
-    armature_mod = _create_armature_mod_for_apply(
-        armature_obj, mesh_obj, preserve_volume
-    )
-
-    # cos are xyz positions and get flattened when using the foreach_set/foreach_get functions, so the array length
-    # will be 3 times the number of vertices
-    co_length = len(me.vertices) * 3
-    # We can re-use the same array over and over
-    eval_verts_cos_array = np.empty(co_length, dtype=np.single)
-
-    # The first shape key will be the first one we'll affect, so set it as active before we get the depsgraph to avoid
-    # having to update the depsgraph
-    mesh_obj.active_shape_key_index = 0
-    # depsgraph lets us evaluate objects and get their state after the effect of modifiers and shape keys
-    # Get the depsgraph
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    # Evaluate the mesh
-    evaluated_mesh_obj = mesh_obj.evaluated_get(depsgraph)
-
-    # The cos of the vertices of the evaluated mesh include the effect of the pinned shape key and all the
-    # modifiers (in this case, only the armature modifier we added since all the other modifiers are disabled in
-    # the viewport).
-    # This combination gives the same effect as if we'd applied the armature modifier to a mesh with the same
-    # shape as the active shape key, so we can simply set the shape key to the evaluated mesh position.
-    #
-    # Get the evaluated cos
-    evaluated_mesh_obj.data.vertices.foreach_get("co", eval_verts_cos_array)
-    # Set the 'basis' (reference) shape key
-    key_blocks[0].data.foreach_set("co", eval_verts_cos_array)
-    # And also set the mesh vertices to ensure that the two remain in sync
-    me.vertices.foreach_set("co", eval_verts_cos_array)
-
-    # For the remainder of the shape keys, we only need to update the shape key itself
-    for i, shape_key in enumerate(key_blocks[1:], start=1):
-        # As shape key pinning is enabled, when we change the active shape key, it will change the state of the mesh
-        mesh_obj.active_shape_key_index = i
-
-        # In order for the change to the active shape key to take effect, the depsgraph has to be updated
-        depsgraph.update()
-
-        # Get the cos of the vertices from the evaluated mesh
-        evaluated_mesh_obj.data.vertices.foreach_get("co", eval_verts_cos_array)
-        # And set the shape key to those same cos
-        shape_key.data.foreach_set("co", eval_verts_cos_array)
-
-    # Restore temporarily changed attributes and remove the added armature modifier
-    for mod in mods_to_reenable_viewport:
-        mod.show_viewport = True
-    mesh_obj.modifiers.remove(armature_mod)
-    for shape_key, vertex_group, mute in zip(
-        me.shape_keys.key_blocks, shape_key_vertex_groups, shape_key_mutes
-    ):
-        shape_key.vertex_group = vertex_group
-        shape_key.mute = mute
-    mesh_obj.active_shape_key_index = old_active_shape_key_index
-    mesh_obj.show_only_shape_key = old_show_only_shape_key
-
-
-def apply_pose_to_rest(preserve_volume=False):
-    """Apply pose to armature and meshes, taking into account shape keys on the meshes.
-    The armature must be in Pose mode."""
-    arm = get_armature()
-    meshes = get_body_meshes()
-    for mesh_obj in meshes:
-        me = cast(bpy.types.Mesh, mesh_obj.data)
-        if me:
-            if me.shape_keys and me.shape_keys.key_blocks:
-                # The mesh has shape keys
-                shape_keys = me.shape_keys
-                key_blocks = shape_keys.key_blocks
-                if len(key_blocks) == 1:
-                    # The mesh only has a basis shape key, so we can remove it and then add it back afterwards
-                    # Get basis shape key
-                    basis_shape_key = key_blocks[0]
-                    # Save the name of the basis shape key
-                    original_basis_name = basis_shape_key.name
-                    # Remove the basis shape key so there are now no shape keys
-                    mesh_obj.shape_key_remove(basis_shape_key)
-                    # Apply the pose to the mesh
-                    _apply_armature_to_mesh_with_no_shape_keys(
-                        arm, mesh_obj, preserve_volume
-                    )
-                    # Add the basis shape key back with the same name as before
-                    mesh_obj.shape_key_add(name=original_basis_name)
-                else:
-                    # Apply the pose to the mesh, taking into account the shape keys
-                    _apply_armature_to_mesh_with_shape_keys(
-                        arm, mesh_obj, preserve_volume
-                    )
-            else:
-                # The mesh doesn't have shape keys, so we can easily apply the pose to the mesh
-                _apply_armature_to_mesh_with_no_shape_keys(
-                    arm, mesh_obj, preserve_volume
-                )
-    # Once the mesh and shape keys (if any) have been applied, the last step is to apply the current pose of the
-    # bones as the new rest pose.
-    #
-    # From the poll function, armature_obj must already be in pose mode, but it's possible it might not be the
-    # active object e.g., the user has multiple armatures opened in pose mode, but a different armature is currently
-    # active. We can use an operator override to tell the operator to treat armature_obj as if it's the active
-    # object even if it's not, skipping the need to actually set armature_obj as the active object.
-    op_override(bpy.ops.pose.armature_apply, {"active_object": arm})
-
-
-class ArmatureOperator(bpy.types.Operator):
-    # poll_message_set was added in 3.0
-    if not hasattr(bpy.types.Operator, "poll_message_set"):
-
-        @classmethod
-        def poll_message_set(cls, message, *args):
-            pass
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        if get_armature() is None:
-            cls.poll_message_set(
-                "Armature not found. Select an armature as active or ensure an armature is set in Cats"
-                " if you have Cats installed."
-            )
-            return False
-        return True
-
-    def execute_main(
-        self,
-        context: bpy.types.Context,
-        arm: bpy.types.Object,
-        meshes: List[bpy.types.Object],
-    ):
-        # To be overridden in subclasses
-        return {"FINISHED"}
-
-    def execute(self, context: bpy.types.Context):
-        arm = get_armature()
-        meshes = get_body_meshes()
-
-        if context.mode != "OBJECT":
-            # Make sure we leave any EDIT modes so that data from edit modes is up-to-date.
-            bpy.ops.object.mode_set(mode="OBJECT")
-
-        with temp_ensure_enabled(arm, *meshes):
-            return self.execute_main(context, arm, meshes)
 
 
 class ArmatureRescale(ArmatureOperator):
@@ -1359,28 +913,6 @@ class ArmatureRescale(ArmatureOperator):
         self.scale_eyes = s.scale_eyes
         self.scale_upper_body = s.imscale_scale_upper_body
         self.upper_body_percentage = s.upper_body_percentage
-
-        return self.execute(context)
-
-
-class ArmatureSpreadFingers(ArmatureOperator):
-    """Spreads the fingers on a humanoid avatar"""
-
-    bl_idname = "armature.spreadfingers"
-    bl_label = "Spread Fingers"
-    bl_options = {"REGISTER", "UNDO"}
-
-    # spare_thumb: bpy.types.Scene.spare_thumb
-    # spread_factor: bpy.types.Scene.spread_factor
-
-    def execute_main(self, context, arm, meshes):
-        spread_fingers(self.spare_thumb, self.spread_factor)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        s = context.scene
-        self.spare_thumb = s.spare_thumb
-        self.spread_factor = s.spread_factor
 
         return self.execute(context)
 
@@ -1459,7 +991,6 @@ class UIGetUpperBodyPercent(ArmatureOperator):
 _register, _unregister = bpy.utils.register_classes_factory(
     [
         ArmatureRescale,
-        ArmatureSpreadFingers,
         ArmatureShrinkHip,
         UIGetCurrentHeight,
         UIGetScaleRatio,

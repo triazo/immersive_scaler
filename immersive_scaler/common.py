@@ -1,4 +1,5 @@
 import bpy
+from contextlib import contextmanager
 
 from typing import Optional, Any, Set, Dict, List
 from itertools import chain
@@ -11,29 +12,29 @@ def get_armature() -> Optional[bpy.types.Object]:
     # Cats stores its currently active armature in an 'armature' EnumProperty added to Scene objects
     # If Cats is loaded, this will always return a string, otherwise, the property won't (shouldn't) exist and None
     # will be returned.
-    armature_name = getattr(scene, 'armature', None)
+    armature_name = getattr(scene, "armature", None)
     if armature_name:
         cats_armature = scene.objects.get(armature_name, None)
-        if cats_armature and cats_armature.type == 'ARMATURE':
+        if cats_armature and cats_armature.type == "ARMATURE":
             return cats_armature
         else:
             return None
 
     # Try to get the armature from the context, this is typically the active object
     obj = context.object
-    if obj and obj.type == 'ARMATURE':
+    if obj and obj.type == "ARMATURE":
         return obj
 
     # Try to the Object called "Armature"
     armature_name = "Armature"
     obj = scene.objects.get(armature_name, None)
-    if obj and obj.type == 'ARMATURE':
+    if obj and obj.type == "ARMATURE":
         return obj
 
     # Look through all armature objects, if there's only one, use that
     obj = None
     for o in scene.objects:
-        if o.type == 'ARMATURE':
+        if o.type == "ARMATURE":
             if obj is None:
                 obj = o
             else:
@@ -45,9 +46,14 @@ def get_armature() -> Optional[bpy.types.Object]:
 if bpy.app.version >= (3, 2):
     # Passing in context_override as a positional-only argument is deprecated as of Blender 3.2, replaced with
     # Context.temp_override
-    def op_override(operator, context_override: dict[str, Any], context: Optional[bpy.types.Context] = None,
-                    execution_context: Optional[str] = None,
-                    undo: Optional[bool] = None, **operator_args) -> set[str]:
+    def op_override(
+        operator,
+        context_override: dict[str, Any],
+        context: Optional[bpy.types.Context] = None,
+        execution_context: Optional[str] = None,
+        undo: Optional[bool] = None,
+        **operator_args
+    ) -> set[str]:
         """Call an operator with a context override"""
         args = []
         if execution_context is not None:
@@ -59,10 +65,17 @@ if bpy.app.version >= (3, 2):
             context = bpy.context
         with context.temp_override(**context_override):
             return operator(*args, **operator_args)
+
 else:
-    def op_override(operator, context_override: Dict[str, Any], context: Optional[bpy.types.Context] = None,
-                    execution_context: Optional[str] = None,
-                    undo: Optional[bool] = None, **operator_args) -> Set[str]:
+
+    def op_override(
+        operator,
+        context_override: Dict[str, Any],
+        context: Optional[bpy.types.Context] = None,
+        execution_context: Optional[str] = None,
+        undo: Optional[bool] = None,
+        **operator_args
+    ) -> Set[str]:
         """Call an operator with a context override"""
         if context is not None:
             context_base = context.copy()
@@ -75,6 +88,78 @@ else:
             args.append(undo)
 
         return operator(*args, **operator_args)
+
+
+@contextmanager
+def temp_ensure_enabled(*objs: bpy.types.Object):
+    """Ensure that objs are enabled in the current scene by setting hide_viewport to False and adding then to the scene
+    collection. Once done, clean up by restoring the hide_viewport value and removing objs from the scene collection if
+    they were not already in the scene collection.
+    It should be safe to delete or rename the objects and/or scene within the 'with' statement.
+    """
+    scene = bpy.context.scene
+
+    # Remove any duplicates from the list of objects
+    unique_objs = []
+    found_objs = set()
+    for obj in objs:
+        if obj not in found_objs:
+            unique_objs.append(obj)
+            found_objs.add(obj)
+
+    old_hide_viewports = [obj.hide_viewport for obj in unique_objs]
+
+    added_to_collections = []
+    try:
+        objects = scene.collection.objects
+        for obj in unique_objs:
+            obj.hide_viewport = False
+            if obj.name not in objects:
+                objects.link(obj)
+                added_to_collections.append(True)
+            else:
+                added_to_collections.append(False)
+        yield
+    finally:
+        for obj, old_hide_viewport, added_to_collection in zip(
+            unique_objs, old_hide_viewports, added_to_collections
+        ):
+            try:
+                # While we could do `if old_hide_viewport: obj.hide_viewport = True`, this wouldn't always check that
+                # obj is still a valid reference.
+                obj.hide_viewport = old_hide_viewport
+
+                if added_to_collection:
+                    try:
+                        objects = scene.collection.objects
+                        if obj.name in objects:
+                            objects.unlink(obj)
+                    except ReferenceError:
+                        # scene has been deleted
+                        pass
+            except ReferenceError:
+                # obj has been deleted
+                pass
+
+
+def obj_in_scene(obj):
+    for o in bpy.context.view_layer.objects:
+        if o is obj:
+            return True
+    return False
+
+
+def get_body_meshes():
+    arm = get_armature()
+    meshes = []
+    for c in arm.children:
+        if not obj_in_scene(c):
+            continue
+        if len(c.users_scene) == 0:
+            continue
+        if c.type == "MESH":
+            meshes.append(c)
+    return meshes
 
 
 def _children_recursive(obj: bpy.types.Object):
@@ -112,7 +197,46 @@ def _children_recursive(obj: bpy.types.Object):
 def children_recursive(obj: bpy.types.Object) -> List[bpy.types.Object]:
     # children_recursive seems to have been added in Blender 3.1, it has the same performance cost as Object.children
     # because they both have to iterate through every Object.
-    if hasattr(bpy.types.Object, 'children_recursive'):
+    if hasattr(bpy.types.Object, "children_recursive"):
         return obj.children_recursive
     else:
         return _children_recursive(obj)
+
+
+class ArmatureOperator(bpy.types.Operator):
+    # poll_message_set was added in 3.0
+    if not hasattr(bpy.types.Operator, "poll_message_set"):
+
+        @classmethod
+        def poll_message_set(cls, message, *args):
+            pass
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if get_armature() is None:
+            cls.poll_message_set(
+                "Armature not found. Select an armature as active or ensure an armature is set in Cats"
+                " if you have Cats installed."
+            )
+            return False
+        return True
+
+    def execute_main(
+        self,
+        context: bpy.types.Context,
+        arm: bpy.types.Object,
+        meshes: List[bpy.types.Object],
+    ):
+        # To be overridden in subclasses
+        return {"FINISHED"}
+
+    def execute(self, context: bpy.types.Context):
+        arm = get_armature()
+        meshes = get_body_meshes()
+
+        if context.mode != "OBJECT":
+            # Make sure we leave any EDIT modes so that data from edit modes is up-to-date.
+            bpy.ops.object.mode_set(mode="OBJECT")
+
+        with temp_ensure_enabled(arm, *meshes):
+            return self.execute_main(context, arm, meshes)
