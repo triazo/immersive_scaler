@@ -191,11 +191,12 @@ def _apply_armature_to_mesh_with_shape_keys(armature_obj, mesh_obj, preserve_vol
     mesh_obj.show_only_shape_key = old_show_only_shape_key
 
 
-def apply_pose_to_rest(preserve_volume=False):
+def apply_pose_to_rest(preserve_volume=False, arm=None):
     """Apply pose to armature and meshes, taking into account shape keys on the meshes.
     The armature must be in Pose mode."""
-    arm = get_armature()
-    meshes = get_body_meshes()
+    if not arm:
+        arm = get_armature()
+    meshes = get_body_meshes(arm)
     for mesh_obj in meshes:
         me = cast(bpy.types.Mesh, mesh_obj.data)
         if me:

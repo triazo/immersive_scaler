@@ -43,6 +43,14 @@ def get_armature() -> Optional[bpy.types.Object]:
     return obj
 
 
+def get_all_armatures(self, context):
+    return [
+        (o.name, o.name, o.name)
+        for o in context.view_layer.objects
+        if o.type == "ARMATURE"
+    ]
+
+
 if bpy.app.version >= (3, 2):
     # Passing in context_override as a positional-only argument is deprecated as of Blender 3.2, replaced with
     # Context.temp_override
@@ -149,8 +157,9 @@ def obj_in_scene(obj):
     return False
 
 
-def get_body_meshes():
-    arm = get_armature()
+def get_body_meshes(arm=None):
+    if not arm:
+        arm = get_armature()
     meshes = []
     for c in arm.children:
         if not obj_in_scene(c):

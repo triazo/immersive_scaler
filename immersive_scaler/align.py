@@ -1,87 +1,392 @@
 import bpy
 import mathutils
+import importlib
+import statistics
 
-def align_bones(dest_bones, root_bone):
-    if not root_bone.name in dest_bones:
+from . import common
+from . import posemode
+from . import bones
+from . import spread_fingers
+
+importlib.reload(common)
+importlib.reload(posemode)
+importlib.reload(bones)
+importlib.reload(spread_fingers)
+
+from .common import (
+    get_all_armatures,
+    get_body_meshes,
+    ArmatureOperator,
+    temp_ensure_enabled,
+)
+from .posemode import start_pose_mode_with_reset, apply_pose_to_rest
+from .bones import get_bone, bone_lookup
+from .spread_fingers import point_bone
+
+
+def scale_torso(context, ref_arm, scale_arm):
+    # Match scale to ref's neck and upper legs
+
+    scale_leg_center = (
+        get_bone("left_leg", scale_arm).head + get_bone("right_leg", scale_arm).head
+    ) / 2
+    ref_leg_center = (
+        get_bone("left_leg", ref_arm).head + get_bone("right_leg", ref_arm).head
+    ) / 2
+
+    translation = ref_leg_center - scale_leg_center
+    hips = get_bone("hips", scale_arm)
+    translation.rotate(hips.bone.matrix_local.to_quaternion().inverted())
+    hips.location = translation
+
+    # Translations aren't reflected in coordinates unless the pose
+    # mode is applied
+    apply_pose_to_rest(arm=scale_arm)
+    start_pose_mode_with_reset(scale_arm)
+
+    # get the bones again since the pose bone objects only last as
+    # long as pose mode does
+    scale_leg_center = (
+        get_bone("left_leg", scale_arm).head + get_bone("right_leg", scale_arm).head
+    ) / 2
+    ref_leg_center = (
+        get_bone("left_leg", ref_arm).head + get_bone("right_leg", ref_arm).head
+    ) / 2
+
+    scale_shoulder_center = (
+        get_bone("left_shoulder", scale_arm).head
+        + get_bone("right_shoulder", scale_arm).head
+    ) / 2
+
+    ref_shoulder_center = (
+        get_bone("left_shoulder", ref_arm).head
+        + get_bone("right_shoulder", ref_arm).head
+    ) / 2
+
+    # scale_neck = get_bone("neck", scale_arm)
+    # ref_neck = get_bone("neck", ref_arm)
+
+    scale_torso = (scale_shoulder_center - ref_leg_center).length
+    ref_torso = (ref_shoulder_center - ref_leg_center).length
+
+    base_scaling = ref_torso / scale_torso
+
+    get_bone("hips", scale_arm).scale = mathutils.Vector(
+        (base_scaling, base_scaling, base_scaling)
+    )
+
+    # The scaling is reletive to the hips but the movement made the
+    # bones line up. Easier to just line it up again
+    apply_pose_to_rest(arm=scale_arm)
+    start_pose_mode_with_reset(scale_arm)
+
+    scale_leg_center = (
+        get_bone("left_leg", scale_arm).head + get_bone("right_leg", scale_arm).head
+    ) / 2
+    ref_leg_center = (
+        get_bone("left_leg", ref_arm).head + get_bone("right_leg", ref_arm).head
+    ) / 2
+
+    translation = ref_leg_center - scale_leg_center
+    hips = get_bone("hips", scale_arm)
+    translation.rotate(hips.bone.matrix_local.to_quaternion().inverted())
+    hips.location = translation
+
+    # Correction for lining up the knees and shoulders. If the base is
+    # the same it should be a no-op
+    hip_scale = (
+        get_bone("left_leg", ref_arm).head - get_bone("right_leg", ref_arm).head
+    ).length / (
+        get_bone("left_leg", scale_arm).head - get_bone("right_leg", scale_arm).head
+    ).length
+    get_bone("hips", scale_arm).scale = (hip_scale, 1.0, 1.0)
+    bpy.context.view_layer.update()
+
+    chest_scale = (
+        get_bone("left_shoulder", ref_arm).head
+        - get_bone("right_shoulder", ref_arm).head
+    ).length / (
+        get_bone("left_shoulder", scale_arm).head
+        - get_bone("right_shoulder", scale_arm).head
+    ).length
+
+    get_bone("left_shoulder", scale_arm).parent.scale = (chest_scale, 1.0, 1.0)
+    # Try not to scale the head
+    get_bone("neck", scale_arm).scale = (1 / chest_scale, 1.0, 1.0)
+
+    apply_pose_to_rest(arm=scale_arm)
+    start_pose_mode_with_reset(scale_arm)
+
+    # Attempt to move the shoulders back a little bit by rotation the
+    # whole model, counter rotating the neck so the head is still
+    # as vertical as it was before
+
+    scale_shoulder_center = (
+        get_bone("left_shoulder", scale_arm).head
+        + get_bone("right_shoulder", scale_arm).head
+    ) / 2
+
+    ref_shoulder_center = (
+        get_bone("left_shoulder", ref_arm).head
+        + get_bone("right_shoulder", ref_arm).head
+    ) / 2
+
+    spine = get_bone("hips", scale_arm)
+    v1 = (ref_shoulder_center - spine.head).normalized()
+    v2 = (scale_shoulder_center - spine.head).normalized()
+
+    sq = spine.matrix.to_quaternion()
+    sq.rotate(spine.matrix.inverted())
+    print("Body rotaiton amount:")
+    print(v2.rotation_difference(v1).to_euler())
+    sq.rotate(v2.rotation_difference(v1))
+    spine.rotation_quaternion = sq
+
+    if get_bone("neck", scale_arm):
+        neck = get_bone("neck", scale_arm)
+        nq = neck.matrix.to_quaternion()
+        nq.rotate(neck.matrix.inverted())
+        nq.rotate(v1.rotation_difference(v2))
+        neck.rotation_quaternion = nq
+
+    apply_pose_to_rest(arm=scale_arm)
+    start_pose_mode_with_reset(scale_arm)
+
+    return base_scaling
+
+
+def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness):
+    ref_oloc = ref_bone.matrix.decompose()[0]
+    scale_oloc = (
+        scale_bone.matrix @ mathutils.Matrix.Translation(scale_bone.location)
+    ).decompose()[0]
+    if (ref_oloc - scale_oloc).length > 0.01:
+        print(
+            "Bone %s has a different head position in the reference armature"
+            % scale_bone.name
+        )
+        print("{} vs {}".format(ref_oloc, scale_oloc))
+        print("head: {}".format(scale_bone.matrix))
+        rn = ref_bone.name
+        sn = scale_bone.name
+
         return
-    rb_length = (root_bone.head - root_bone.tail).length
-    rb_target_length = (dest_bones[root_bone.name][0] - dest_bones[root_bone.name][1]).length
 
-    rb_scale = rb_target_length / rb_length
-    #rb_translate = dest_bones[root_bone.name][0] - root_bone.head
+    # Scaling should prioritize having children line up. For every set
+    # of matching children, find the transform needed to the parent to
+    # get the children to line up, then perform the one that makes the
+    # most line up.
+    child_target_scales = []
+    child_target_rotations = []
+    for s_child in scale_bone.children:
+        for r_child in ref_bone.children:
+            if s_child.name == r_child.name or (
+                bone_lookup(s_child.name) == bone_lookup(r_child.name)
+                and bone_lookup(r_child.name) != None
+            ):
+                # Find ideal scale
+                scale = (r_child.head - ref_bone.head).length / (
+                    s_child.head - scale_bone.head
+                ).length
+                child_target_scales.append(scale)
 
-    m_g = mathutils.Matrix.Translation(dest_bones[root_bone.name][0])
-    local_destination = root_bone.matrix.inverted() @ m_g
+                # I'm not sure if it's possible to get a vector scale
+                # *and* rotation, there are too many degrees of
+                # freedom and they will overlap if calculated separately.
 
-    #
-    # rbm = root_bone.matrix
-    # rbm.translation = (0,0,0)
-    # root_bone.matrix = rbm
+                # find rotation difference between s_child.head -> scale_bone.head -> r_child.head
+                # Vectors should be in the space of scale_bone
+                v1 = (s_child.head - scale_bone.head).normalized()
+                v2 = (r_child.head - scale_bone.head).normalized()
+                child_target_rotations.append(v1.rotation_difference(v2))
 
-    root_bone.location = local_destination.translation
-    #point_bone(root_bone, dest_bones[root_bone.name][1])
-    #root_bone.scale = (rb_scale, rb_scale, rb_scale)
+    # Default to not changing scaling if there are no children
+    scale_vector = scale_bone.scale
 
-    print("Scaling bone %s by a factor of %f"%(root_bone.name, rb_scale))
-    print("Moving bone %s from %s to %s"%(root_bone.name, str(root_bone.head), str(dest_bones[root_bone.name][0])))
-    for child in root_bone.children:
-        # If single child, or tail lines up with a child before
-        # moving, scale and point bone to match dest_bones
-        align_bones(dest_bones, child)
+    if len(child_target_scales) > 0:
+        sf = statistics.median(child_target_scales)
+        scale_vector = (sf, sf, sf)
 
-def align_armature(dest_bones, arm):
-    old_active = bpy.context.active_object
-    bpy.context.view_layer.objects.active = arm
-    bpy.ops.object.mode_set(mode='POSE', toggle = False)
-    roots = [b for b in arm.pose.bones if not b.parent]
-    for root in roots:
-        align_bones(dest_bones, root)
+    # Inherit scale should be on, so if the bone is a root of the arm
+    # or leg, use the scale factor
+    def lerp(a, b, f):
+        return (1 - f) * a + f * b
 
-    #bpy.ops.cats_manual.pose_to_rest()
-    bpy.context.view_layer.objects.active = old_active
+    if bone_lookup(scale_bone.name) in ["left_leg", "right_leg"]:
+        scale_vector = (
+            lerp(scale_bone.scale[0], scale_vector[0], leg_thickness),
+            scale_vector[1],
+            lerp(scale_bone.scale[2], scale_vector[2], leg_thickness),
+        )
+
+    if bone_lookup(scale_bone.name) in ["left_arm", "right_arm"]:
+        scale_vector = (
+            lerp(scale_bone.scale[0], scale_vector[0], arm_thickness),
+            scale_vector[1],
+            lerp(scale_bone.scale[2], scale_vector[2], arm_thickness),
+        )
+
+    print("Scaling bone {} by factor {}".format(scale_bone.name, scale_vector))
+    scale_bone.scale = scale_vector
+    bpy.context.view_layer.update()
+
+    if len(child_target_rotations) > 0:
+        print([r.to_euler() for r in child_target_rotations])
+        bq = scale_bone.matrix.to_quaternion()
+        bq.rotate(child_target_rotations[0])
+        bq.rotate(scale_bone.matrix.inverted())
+        scale_bone.rotation_quaternion = bq
+
+    bpy.context.view_layer.update()
+
+    # Recurse to children with matchinng ames
+    for s_child in scale_bone.children:
+        for r_child in ref_bone.children:
+            if s_child.name == r_child.name or (
+                bone_lookup(s_child.name) != None
+                and bone_lookup(s_child.name) == bone_lookup(r_child.name)
+            ):
+                if not bone_lookup(s_child.name):
+                    continue
+                align_bones(r_child, s_child, arm_thickness, leg_thickness)
 
 
-def align_armatures(context):
-    print("Selected Objects:")
-    for o in  context.selected_objects:
-        print(o.name)
-    print("Active Object")
-    print(context.active_object.name)
+def align_armatures(
+    context, arm_ref_name, arm_scaling_name, arm_thickness, leg_thickness
+):
+    # TODO: completely rewrite or something
+    ref_arm = context.scene.objects.get(arm_ref_name)
+    scale_arm = context.scene.objects.get(arm_scaling_name)
 
-    selected_objects = [o for o in context.selected_objects]
-    dest_arm = context.active_object
-    dest_bones = {}
-    bpy.ops.object.mode_set(mode='POSE', toggle = False)
-    for bone in dest_arm.pose.bones:
-        dest_bones[bone.name] = (bone.head, bone.tail)
-    bpy.ops.object.mode_set(mode='POSE', toggle = True)
+    if ref_arm == scale_arm:
+        # Should probably be an error
+        return
 
-    for arm in selected_objects:
-        if arm == dest_arm:
-            continue
-        if arm.find_armature() != None:
-            arm = arm.find_armature()
-        # For every bone, starting at the parent,, move the bone head to match if there is a parallel
-        align_armature(dest_bones, arm)
+    start_pose_mode_with_reset(scale_arm)
+
+    base_scale = scale_torso(context, ref_arm, scale_arm)
+
+    # Special case for Hips, optional?
+    # Leave out for now, it would break spine weighting
+    # For now, better to stretch?
+
+    # Base case set the hip position
+    # get_bone("hips", scale_arm).matrix = get_bone("hips", ref_arm).matrix
+
+    # A view layer update doesn't cut it for matching hip position,
+    # fortunately this is the only time we need to apply and reset in
+    # the middle
+    apply_pose_to_rest(arm=scale_arm)
+    start_pose_mode_with_reset(scale_arm)
+
+    # Recursive call to scale each of the limbs
+    for limb_start in ["right_leg", "left_leg", "right_shoulder", "left_shoulder"]:
+        pass
+        align_bones(
+            get_bone(limb_start, ref_arm),
+            get_bone(limb_start, scale_arm),
+            arm_thickness,
+            leg_thickness,
+        )
+
+    apply_pose_to_rest(arm=scale_arm)
 
 
-
-class ArmatureAlign(bpy.types.Operator):
+class ArmatureAlign(ArmatureOperator):
     """Takes one armature and aligns it to another"""
-    bl_idname = "armature.align"
+
+    bl_idname = "armature.imscale_align"
     bl_label = "Align Armatures"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute_main(self, context, arm, meshes):
+        ra = context.scene.objects.get(self.scale_armature_ref)
+        sa = context.scene.objects.get(self.scale_armature_arm)
+        meshes = get_body_meshes(sa)
+        with temp_ensure_enabled(sa, ra, *meshes):
+            align_armatures(
+                context,
+                self.scale_armature_ref,
+                self.scale_armature_arm,
+                self.arm_thickness / 100.0,
+                self.leg_thickness / 100.0,
+            )
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        s = context.scene
+
+        self.scale_armature_ref = s.imscale_scale_armature_ref
+        self.scale_armature_arm = s.imscale_scale_armature_arm
+        self.arm_thickness = s.arm_thickness
+        self.leg_thickness = s.leg_thickness
+        return self.execute(context)
+
+
+## Ui operators
+class SearchMenuOperator_scale_armature_ref(bpy.types.Operator):
+    bl_description = "Select the armature to use as a reference for scaling"
+    bl_idname = "scene.search_menu_scale_armature_ref"
+    bl_label = "Scale Armature Reference"
+    bl_property = "my_enum"
+
+    my_enum: bpy.props.EnumProperty(
+        name="Scaling Reference Armature",
+        description="Target armature for scaling",
+        items=get_all_armatures,
+    )
 
     def execute(self, context):
-        align_armatures(context)
-        return{'FINISHED'}
+        context.scene.imscale_scale_armature_ref = self.my_enum
+        return {"FINISHED"}
 
-def register():
-    bpy.utils.register_class(ArmatureAlign)
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.invoke_search_popup(self)
+        return {"FINISHED"}
 
-def unregister():
-    bpy.utils.unregister_class(ArmatureAlign)
+
+class SearchMenuOperator_scale_armature_arm(bpy.types.Operator):
+    bl_description = "Select the armature to scale"
+    bl_idname = "scene.search_menu_scale_armature_arm"
+    bl_label = "Scale Armature"
+    bl_property = "my_enum"
+
+    my_enum: bpy.props.EnumProperty(
+        name="Scaling Active Armature",
+        description="Active Armature to scale",
+        items=get_all_armatures,
+    )
+
+    def execute(self, context):
+        context.scene.imscale_scale_armature_arm = self.my_enum
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
+_register, _unregister = bpy.utils.register_classes_factory(
+    [
+        ArmatureAlign,
+        SearchMenuOperator_scale_armature_ref,
+        SearchMenuOperator_scale_armature_arm,
+    ]
+)
+
+
+def ops_register():
+    print("Registering Armature Aligning add-on")
+    _register()
+
+
+def ops_unregister():
+    print("Deregistering Armature Aligning add-on")
+    _unregister()
 
 
 if __name__ == "__main__":
-    register()
+    _register()

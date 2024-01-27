@@ -1,4 +1,13 @@
 import bpy
+import importlib
+
+from sys import intern
+
+from . import common
+
+importlib.reload(common)
+
+from .common import get_armature
 
 bone_names = {
     "right_shoulder": ["rightshoulder", "shoulderr", "rshoulder"],
@@ -58,7 +67,32 @@ bone_names = {
     "left_eye": ["eyel", "lefteye", "eyeleft", "lefteye001"],
     "head": ["head"],
     "neck": ["neck"],
+    "hips": ["hips", "hip", "pelvis", "root"],
+    "spine": ["spine"],
+    "chest": ["chest"],
+    "upperchest": ["upperchest", "upper_chest"],
+    "left_toes": ["toesl", "toel"],
+    "right_toes": ["toesr", "toer"],
 }
+
+
+def bone_lookup(name):
+    # Now using overrides
+
+    # Need to scan through every override and test if they reference
+    # the bone in qeustion.
+    for bone in bone_names:
+        # Hopefully using the right context here. Is there a way you
+        # could be using a different scene somehow?
+        override = getattr(bpy.context.scene, "override_" + bone)
+        if override == name:
+            return bone
+
+    lower_name = name.lower().replace("_", "").replace("-", "").replace(" ", "")
+    for token in bone_names:
+        if lower_name in bone_names[token]:
+            return token
+    return None
 
 
 def get_bone(name, arm):
@@ -78,3 +112,59 @@ def get_bone(name, arm):
         if n in bone_lookup:
             return bone_lookup[n]
     return arm.pose.bones[name]
+
+
+class SearchMenuOperator_bone_selection(bpy.types.Operator):
+    bl_description = "Select the bone for overriding"
+    bl_idname = "scene.search_menu_bone_selection"
+    bl_label = "Select Bone"
+    bl_property = "my_enum"
+
+    bone_name: bpy.props.StringProperty()
+
+    def getbones(self, context):
+        global _ENUM_CACHE
+        choices = [("_None",) * 3]
+        arm = get_armature()
+        if arm is not None:
+            # intern each string in the enum items to ensure Python has its own reference to it
+            choices = choices + list((intern(b.name),) * 3 for b in arm.data.bones)
+        # Storing the list of choices in bpy.types.Object.Enum doesn't seem to work properly for some reason, but we can
+        # use our own cache fine
+        _ENUM_CACHE = choices
+        return choices
+
+    my_enum: bpy.props.EnumProperty(
+        name="Scaling Active Armature",
+        description="Active Armature to scale",
+        items=getbones,
+    )
+
+    def execute(self, context):
+        setattr(context.scene, "override_" + self.bone_name, self.my_enum)
+        # context.scene.imscale_scale_armature_barm = self.my_enum
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.invoke_search_popup(self)
+        return {"FINISHED"}
+
+
+_register, _unregister = bpy.utils.register_classes_factory(
+    [SearchMenuOperator_bone_selection]
+)
+
+
+def ops_register():
+    print("Registering imscale bone selection")
+    _register()
+
+
+def ops_unregister():
+    print("Deregistering imscale bone selection")
+    _unregister()
+
+
+if __name__ == "__main__":
+    _register()

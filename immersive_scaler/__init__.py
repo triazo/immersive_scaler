@@ -15,6 +15,8 @@ from . import ui as imui
 from . import operations as imops
 from . import bones as bones
 from . import spread_fingers as spread_fingers
+from . import align as align
+from . import bones as bones
 
 # from .operations import ops_register
 # from .operations import ops_unregister
@@ -38,12 +40,16 @@ def register():
     importlib.reload(imops)
     importlib.reload(bones)
     importlib.reload(spread_fingers)
+    importlib.reload(align)
     imui.ui_register()
     imops.ops_register()
     spread_fingers.ops_register()
+    align.ops_register()
+    bones.ops_register()
 
 
 def unregister():
     imui.ui_unregister()
     imops.ops_unregister()
     spread_fingers.ops_unregister()
+    align.ops_unregister()

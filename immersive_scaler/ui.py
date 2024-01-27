@@ -12,7 +12,8 @@ from bpy.types import Scene, Bone
 
 from sys import intern
 
-from .common import get_armature
+from .common import get_armature, get_all_armatures
+
 
 # For bone mapping. Currently needs to match the dict keys in operations.py
 BONE_LIST = [
@@ -34,6 +35,12 @@ BONE_LIST = [
     "left_eye",
     "neck",
     "head",
+    "hips",
+    "spine",
+    "chest",
+    "upperchest",
+    "left_toes",
+    "right_toes",
 ]
 
 # Cache for enum property choices
@@ -189,6 +196,19 @@ def set_properties():
         subtype="FACTOR",
     )
 
+    # Armature aligning
+    Scene.imscale_scale_armature_ref = EnumProperty(
+        name="Scaling Reference Armature",
+        description="Target armature for scaling",
+        items=get_all_armatures,
+    )
+
+    Scene.imscale_scale_armature_arm = EnumProperty(
+        name="Scaling Active Armature",
+        description="Active Armature to scale",
+        items=get_all_armatures,
+    )
+
     # UI options
     bpy.types.Scene.imscale_scale_upper_body = bpy.props.BoolProperty(
         name="Scale by Upper Body",
@@ -208,11 +228,9 @@ def set_properties():
         name="Show bone mapping", default=False
     )
 
-    _none_enum_item = ("_None",) * 3
-
     def getbones(self, context):
         global _ENUM_CACHE
-        choices = [_none_enum_item]
+        choices = [("_None",) * 3]
         arm = get_armature()
         if arm is not None:
             # intern each string in the enum items to ensure Python has its own reference to it
@@ -389,7 +407,38 @@ def draw_ui(context, layout):
 
         for bone_name in BONE_LIST:
             row = col.row(align=True)
-            row.prop(context.scene, "override_" + bone_name)
+            row.label(text=bone_name)
+            props = row.operator(
+                "scene.search_menu_bone_selection",
+                text=getattr(context.scene, "override_" + bone_name),
+                icon="BONE_DATA",
+            ).bone_name = bone_name
+
+    # Scale matching
+    arm_count = len(get_all_armatures(None, bpy.context))
+    if arm_count > 1:
+        # Scale matching only shows if there are multiple armatures
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text="Scale Matching")
+        row = col.row(align=True)
+        row.label(text="Reference Armature")
+        row.operator(
+            "scene.search_menu_scale_armature_ref",
+            text=context.scene.imscale_scale_armature_ref,
+            icon="ARMATURE_DATA",
+        )
+
+        row = col.row(align=True)
+        row.label(text="Scaling Armature")
+        row.operator(
+            "scene.search_menu_scale_armature_arm",
+            text=context.scene.imscale_scale_armature_arm,
+            icon="ARMATURE_DATA",
+        )
+
+        row = col.row(align=True)
+        row.operator("armature.imscale_align", text="Match scale")
 
     return None
 
