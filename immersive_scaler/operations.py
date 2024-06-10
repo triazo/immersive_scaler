@@ -35,7 +35,7 @@ def get_bone_worldspace_z(name, arm):
     return (arm.matrix_world @ get_bone(name, arm).head).z
 
 
-if hasattr(bpy.types.bpy_prop_array, "foreach_get"):
+if hasattr(bpy.types.bpy_prop_array, "foreach_get") and bpy.app.version < (4, 1):
     # Fast accessor method was added in Blender 2.83. While it's about 50 times slower without the fast accessor method,
     # a bounding box is only an 8x3 array, so it's not going to make much difference.
     def bound_box_to_co_array(obj: bpy.types.Object):
