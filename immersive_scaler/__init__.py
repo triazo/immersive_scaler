@@ -28,7 +28,7 @@ bl_info = {
     "name": "Immersive Scaler",
     "category": "3D View",
     "author": "pager",
-    "version": (0, 5, 0),
+    "version": (0, 5, 1),
     "blender": (2, 81, 0),
     "location": "View3D",
 }
