@@ -438,7 +438,7 @@ def draw_ui(context, layout):
         )
 
         row = col.row(align=True)
-        row.operator("armature.imscale_align", text="Match scale")
+        row.operator("armature.imscale_align", text="Match Scale")
 
     return None
 

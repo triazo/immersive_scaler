@@ -20,7 +20,7 @@ from .common import (
     temp_ensure_enabled,
 )
 from .posemode import start_pose_mode_with_reset, apply_pose_to_rest
-from .bones import get_bone, bone_lookup
+from .bones import get_bone, bone_lookup, check_bone
 from .spread_fingers import point_bone
 
 
@@ -112,7 +112,8 @@ def scale_torso(context, ref_arm, scale_arm):
 
     get_bone("left_shoulder", scale_arm).parent.scale = (chest_scale, 1.0, 1.0)
     # Try not to scale the head
-    get_bone("neck", scale_arm).scale = (1 / chest_scale, 1.0, 1.0)
+    if check_bone("neck", scale_arm):
+        get_bone("neck", scale_arm).scale = (1 / (hip_scale * chest_scale), 1.0, 1.0)
 
     apply_pose_to_rest(arm=scale_arm)
     start_pose_mode_with_reset(scale_arm)
@@ -137,8 +138,6 @@ def scale_torso(context, ref_arm, scale_arm):
 
     sq = spine.matrix.to_quaternion()
     sq.rotate(spine.matrix.inverted())
-    print("Body rotaiton amount:")
-    print(v2.rotation_difference(v1).to_euler())
     sq.rotate(v2.rotation_difference(v1))
     spine.rotation_quaternion = sq
 
@@ -155,21 +154,24 @@ def scale_torso(context, ref_arm, scale_arm):
     return base_scaling
 
 
-def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness):
+def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale):
+    # Special case - for now don't scale the hands. There's too much
+    # variation in finger finger bone positions. Maybe something to
+    # make into a toglge?
+    if (
+        bone_lookup(scale_bone.name) == "right_wrist"
+        or bone_lookup(scale_bone.name) == "left_wrist"
+    ):
+        pass
+
+    # Check that the starting position is the same, partially as a
+    # sanity check. Continuing to align when it's off to start will
+    # throw off every child way more
     ref_oloc = ref_bone.matrix.decompose()[0]
     scale_oloc = (
         scale_bone.matrix @ mathutils.Matrix.Translation(scale_bone.location)
     ).decompose()[0]
     if (ref_oloc - scale_oloc).length > 0.01:
-        print(
-            "Bone %s has a different head position in the reference armature"
-            % scale_bone.name
-        )
-        print("{} vs {}".format(ref_oloc, scale_oloc))
-        print("head: {}".format(scale_bone.matrix))
-        rn = ref_bone.name
-        sn = scale_bone.name
-
         return
 
     # Scaling should prioritize having children line up. For every set
@@ -226,14 +228,16 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness):
             lerp(scale_bone.scale[2], scale_vector[2], arm_thickness),
         )
 
+    if bone_lookup(scale_bone.name) in ["left_wrist", "right_wrist"]:
+        scale_vector = tuple(1.0 / ps for ps in parent_scale)
+    print("Parent scale is {}".format(parent_scale))
     print("Scaling bone {} by factor {}".format(scale_bone.name, scale_vector))
     scale_bone.scale = scale_vector
     bpy.context.view_layer.update()
 
     if len(child_target_rotations) > 0:
-        print([r.to_euler() for r in child_target_rotations])
         bq = scale_bone.matrix.to_quaternion()
-        bq.rotate(child_target_rotations[0])
+        bq.rotate(child_target_rotations[-1])
         bq.rotate(scale_bone.matrix.inverted())
         scale_bone.rotation_quaternion = bq
 
@@ -248,7 +252,16 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness):
             ):
                 if not bone_lookup(s_child.name):
                     continue
-                align_bones(r_child, s_child, arm_thickness, leg_thickness)
+                align_bones(
+                    r_child,
+                    s_child,
+                    arm_thickness,
+                    leg_thickness,
+                    tuple(
+                        scale_vector[i] * parent_scale[i]
+                        for i in range(len(scale_vector))
+                    ),
+                )
 
 
 def align_armatures(
@@ -287,6 +300,7 @@ def align_armatures(
             get_bone(limb_start, scale_arm),
             arm_thickness,
             leg_thickness,
+            (1.0, 1.0, 1.0),
         )
 
     apply_pose_to_rest(arm=scale_arm)

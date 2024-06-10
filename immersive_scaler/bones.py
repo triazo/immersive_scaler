@@ -22,7 +22,15 @@ bone_names = {
         "forearmr",
     ],
     "right_wrist": ["rightwrist", "wristr", "rwrist", "handr", "righthand"],
-    "right_leg": ["rightleg", "legr", "rleg", "upperlegr", "thighr", "rightupperleg"],
+    "right_leg": [
+        "rightleg",
+        "legr",
+        "rleg",
+        "upperlegr",
+        "thighr",
+        "rightupperleg",
+        "rupperleg",
+    ],
     "right_knee": [
         "rightknee",
         "kneer",
@@ -53,7 +61,15 @@ bone_names = {
         "forearml",
     ],
     "left_wrist": ["leftwrist", "wristl", "lwrist", "handl", "lefthand"],
-    "left_leg": ["leftleg", "legl", "lleg", "upperlegl", "thighl", "leftupperleg"],
+    "left_leg": [
+        "leftleg",
+        "legl",
+        "lleg",
+        "upperlegl",
+        "thighl",
+        "leftupperleg",
+        "lupperleg",
+    ],
     "left_knee": [
         "leftknee",
         "kneel",
@@ -93,6 +109,27 @@ def bone_lookup(name):
         if lower_name in bone_names[token]:
             return token
     return None
+
+
+def check_bone(name, arm):
+    """To be used to check optional features that don't requrie a core bone to be present
+
+    Returns True if the bone is present, otherwise False"""
+    s = bpy.context.scene
+    override = getattr(s, "override_" + name)
+    if override != "_None" and name in arm.pose.bones:
+        return True
+    name_list = bone_names[name]
+    bone_lookup = dict(
+        [
+            (bone.name.lower().translate(dict.fromkeys(map(ord, " _."))), bone)
+            for bone in arm.pose.bones
+        ]
+    )
+    for n in name_list:
+        if n in bone_lookup:
+            return True
+    return False
 
 
 def get_bone(name, arm):
