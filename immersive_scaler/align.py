@@ -190,7 +190,7 @@ def get_scaling_rotations(ref_bone, scale_bone):
                     s_child.name
                 ):
                     starting_rotation = v1.rotation_difference(v2)
-                    return [scale], []
+                    return [scale], [starting_rotation]
 
     return child_target_scales, child_target_rotations
 
