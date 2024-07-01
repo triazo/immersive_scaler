@@ -104,7 +104,9 @@ def bone_lookup(name):
         if override == name:
             return bone
 
-    lower_name = name.lower().replace("_", "").replace("-", "").replace(" ", "")
+    lower_name = (
+        name.lower().replace("_", "").replace("-", "").replace(" ", "").replace(".", "")
+    )
     for token in bone_names:
         if lower_name in bone_names[token]:
             return token
@@ -122,7 +124,7 @@ def check_bone(name, arm):
     name_list = bone_names[name]
     bone_lookup = dict(
         [
-            (bone.name.lower().translate(dict.fromkeys(map(ord, " _."))), bone)
+            (bone.name.lower().translate(dict.fromkeys(map(ord, " _.-"))), bone)
             for bone in arm.pose.bones
         ]
     )
@@ -141,7 +143,7 @@ def get_bone(name, arm):
     name_list = bone_names[name]
     bone_lookup = dict(
         [
-            (bone.name.lower().translate(dict.fromkeys(map(ord, " _."))), bone)
+            (bone.name.lower().translate(dict.fromkeys(map(ord, " _.-"))), bone)
             for bone in arm.pose.bones
         ]
     )

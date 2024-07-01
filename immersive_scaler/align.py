@@ -118,7 +118,7 @@ def scale_torso(context, ref_arm, scale_arm):
     apply_pose_to_rest(arm=scale_arm)
     start_pose_mode_with_reset(scale_arm)
 
-    # Attempt to move the shoulders back a little bit by rotation the
+    # Attempt to move the shoulders back a little bit by rotating the
     # whole model, counter rotating the neck so the head is still
     # as vertical as it was before
 
@@ -172,6 +172,11 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale
         scale_bone.matrix @ mathutils.Matrix.Translation(scale_bone.location)
     ).decompose()[0]
     if (ref_oloc - scale_oloc).length > 0.01:
+        print(
+            "Bone {} is off by {}, skipping".format(
+                scale_bone.name, ref_oloc - scale_oloc
+            )
+        )
         return
 
     # Scaling should prioritize having children line up. For every set
@@ -230,7 +235,7 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale
 
     if bone_lookup(scale_bone.name) in ["left_wrist", "right_wrist"]:
         scale_vector = tuple(1.0 / ps for ps in parent_scale)
-    print("Parent scale is {}".format(parent_scale))
+
     print("Scaling bone {} by factor {}".format(scale_bone.name, scale_vector))
     scale_bone.scale = scale_vector
     bpy.context.view_layer.update()
@@ -251,6 +256,11 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale
                 and bone_lookup(s_child.name) == bone_lookup(r_child.name)
             ):
                 if not bone_lookup(s_child.name):
+                    print(
+                        "bone {} not a main human armature bone, skipping".format(
+                            s_child.name
+                        )
+                    )
                     continue
                 align_bones(
                     r_child,
