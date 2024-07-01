@@ -154,6 +154,47 @@ def scale_torso(context, ref_arm, scale_arm):
     return base_scaling
 
 
+def get_scaling_rotations(ref_bone, scale_bone):
+    # Scaling should prioritize having children line up. For every set
+    # of matching children, find the transform needed to the parent to
+    # get the children to line up, then perform the one that makes the
+    # most line up.
+    child_target_scales = []
+    child_target_rotations = []
+    for s_child in scale_bone.children:
+        for r_child in ref_bone.children:
+            if s_child.name == r_child.name or (
+                bone_lookup(s_child.name) == bone_lookup(r_child.name)
+                and bone_lookup(r_child.name) != None
+            ):
+
+                # Find ideal scale
+                scale = (r_child.head - ref_bone.head).length / (
+                    s_child.head - scale_bone.head
+                ).length
+                child_target_scales.append(scale)
+
+                # I'm not sure if it's possible to get a vector scale
+                # *and* rotation, there are too many degrees of
+                # freedom and they will overlap if calculated separately.
+
+                # find rotation difference between s_child.head -> scale_bone.head -> r_child.head
+                # Vectors should be in the space of scale_bone
+                v1 = (s_child.head - scale_bone.head).normalized()
+                v2 = (r_child.head - scale_bone.head).normalized()
+                child_target_rotations.append(v1.rotation_difference(v2))
+
+                # For the wrist bone, always scale to the middle
+                # finger if it's available
+                if "wrist" in bone_lookup(scale_bone.name) and "middle" in bone_lookup(
+                    s_child.name
+                ):
+                    starting_rotation = v1.rotation_difference(v2)
+                    return [scale], []
+
+    return child_target_scales, child_target_rotations
+
+
 def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale):
     # Special case - for now don't scale the hands. There's too much
     # variation in finger finger bone positions. Maybe something to
@@ -179,33 +220,9 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale
         )
         return
 
-    # Scaling should prioritize having children line up. For every set
-    # of matching children, find the transform needed to the parent to
-    # get the children to line up, then perform the one that makes the
-    # most line up.
-    child_target_scales = []
-    child_target_rotations = []
-    for s_child in scale_bone.children:
-        for r_child in ref_bone.children:
-            if s_child.name == r_child.name or (
-                bone_lookup(s_child.name) == bone_lookup(r_child.name)
-                and bone_lookup(r_child.name) != None
-            ):
-                # Find ideal scale
-                scale = (r_child.head - ref_bone.head).length / (
-                    s_child.head - scale_bone.head
-                ).length
-                child_target_scales.append(scale)
-
-                # I'm not sure if it's possible to get a vector scale
-                # *and* rotation, there are too many degrees of
-                # freedom and they will overlap if calculated separately.
-
-                # find rotation difference between s_child.head -> scale_bone.head -> r_child.head
-                # Vectors should be in the space of scale_bone
-                v1 = (s_child.head - scale_bone.head).normalized()
-                v2 = (r_child.head - scale_bone.head).normalized()
-                child_target_rotations.append(v1.rotation_difference(v2))
+    child_target_scales, child_target_rotations = get_scaling_rotations(
+        ref_bone, scale_bone
+    )
 
     # Default to not changing scaling if there are no children
     scale_vector = scale_bone.scale
