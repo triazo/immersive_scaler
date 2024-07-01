@@ -158,11 +158,11 @@ def align_bones(ref_bone, scale_bone, arm_thickness, leg_thickness, parent_scale
     # Special case - for now don't scale the hands. There's too much
     # variation in finger finger bone positions. Maybe something to
     # make into a toglge?
-    if (
-        bone_lookup(scale_bone.name) == "right_wrist"
-        or bone_lookup(scale_bone.name) == "left_wrist"
-    ):
-        pass
+    # if (
+    #     bone_lookup(scale_bone.name) == "right_wrist"
+    #     or bone_lookup(scale_bone.name) == "left_wrist"
+    # ):
+    #     pass
 
     # Check that the starting position is the same, partially as a
     # sanity check. Continuing to align when it's off to start will
