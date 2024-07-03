@@ -141,7 +141,7 @@ def scale_torso(context, ref_arm, scale_arm):
     sq.rotate(v2.rotation_difference(v1))
     spine.rotation_quaternion = sq
 
-    if get_bone("neck", scale_arm):
+    if check_bone("neck", scale_arm):
         neck = get_bone("neck", scale_arm)
         nq = neck.matrix.to_quaternion()
         nq.rotate(neck.matrix.inverted())
