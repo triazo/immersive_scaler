@@ -245,6 +245,11 @@ def set_properties():
         default=False,
         description="Works better for upper lock all mode in vrc",
     )
+    bpy.types.Scene.imscale_keep_head_size = bpy.props.BoolProperty(
+        name="Keep head size",
+        default=False,
+        description="Attempts to keep head size by scaling the torso",
+    )
     bpy.types.Scene.imscale_show_customize = bpy.props.BoolProperty(
         name="Show customize panel", default=False
     )
@@ -380,6 +385,8 @@ def draw_ui(context, layout):
         row.prop(bpy.context.scene, "debug_no_scale", expand=True)
         row = col.row(align=False)
         row.prop(scn, "imscale_scale_upper_body", text="Scale by Relative Proportions")
+        row = col.row(align=False)
+        row.prop(scn, "imscale_keep_head_size", text="Keep Head Size")
 
     row = col.row(align=True)
     row.label(text="-------------")

@@ -171,6 +171,28 @@ def get_body_meshes(arm=None):
     return meshes
 
 
+def child_constraints(objects: List[bpy.types.Object]):
+    """Takes O(len(bpy.data.objects)) time, returns any objects that
+    are childed to something in `objects`, along with the object or
+    bone it is childed to"""
+    constrained_objects = []
+    for o in bpy.data.objects:
+        if "Child Of" in o.constraints:
+            constraint = o.constraints["Child Of"]
+
+            if constraint.target in objects:
+                target = constraint.target
+                if constraint.subtarget == "":
+                    constrained_objects.append((o, target))
+                else:
+                    # As far as I can tell the subtarget needs to be
+                    # either a bone or vertex group which should both
+                    # be valid
+                    target_bone = target.pose.bones[constraint.subtarget]
+                    constrained_objects.append((o, target_bone))
+    return constrained_objects
+
+
 def _children_recursive(obj: bpy.types.Object):
     """Takes O(len(bpy.data.objects)) time, just like Blender's implementation in 3.1+ (also in Python code, but can't
     just copy it due to it being GPLv2+)"""
@@ -183,7 +205,6 @@ def _children_recursive(obj: bpy.types.Object):
                 obj_to_children[parent].append(o)
             else:
                 obj_to_children[parent] = [o]
-
     children = []
     if obj in obj_to_children:
         # Iterate to find all the children instead of recursively calling a function

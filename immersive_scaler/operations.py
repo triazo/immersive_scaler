@@ -602,6 +602,72 @@ def scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage
 #     arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio)
 
 
+def scale_torso(arm, torso_scale_ratio):
+    # The final distance measured is from the leg bones to the eyes,
+    # but the distance lengthened is only from the leg bone roots to
+    # the chest or upper chest
+
+    if check_bone("upperchest", arm):
+        scaled_top = get_bone_worldspace_z("upperchest", arm)
+    else:
+        scaled_top = get_bone_worldspace_z("chest", arm)
+
+    scaled_bottom = (
+        get_bone_worldspace_z("left_leg", arm) + get_bone_worldspace_z("right_leg", arm)
+    ) / 2
+
+    total_height = get_eye_height(arm) - scaled_bottom
+    scaled_height = scaled_top - scaled_bottom
+
+    print("Total height: {}, scaled height: {}".format(total_height, scaled_height))
+    scale_ratio = 1 + ((total_height / scaled_height) * (torso_scale_ratio - 1))
+
+    # Mark boundry bones as not inheriting scale
+    boundry_bones = list(
+        b.name
+        for b in get_bone("hips", arm).children
+        if b.name != get_bone("spine", arm).name
+    )
+    if check_bone("upperchest", arm):
+        boundry_bones += [get_bone("upperchest", arm).name]
+    else:
+        boundry_bones += [get_bone("chest", arm).name]
+
+    saved_bone_inherit_scales = {}
+    for b in boundry_bones:
+        # Every bone here either comes from a lookup or directly from
+        # the armature, so it should be safe to referece pose.bones
+        # directly without looking at overrides in this step
+        bone = arm.pose.bones[b]
+        saved_bone_inherit_scales[b] = arm.data.bones[bone.name].inherit_scale
+
+        print("Disabling inherit scale on bone {}".format(b))
+        arm.data.bones[bone.name].inherit_scale = "NONE"
+
+    print("Scaling hip by {}".format(scale_ratio))
+    get_bone("hips", arm).scale = (1, scale_ratio, 1)
+
+    # Check that it worked as expected
+    if check_bone("upperchest", arm):
+        new_scaled_top = get_bone_worldspace_z("upperchest", arm)
+    else:
+        new_scaled_top = get_bone_worldspace_z("chest", arm)
+
+    new_scaled_bottom = (
+        get_bone_worldspace_z("left_leg", arm) + get_bone_worldspace_z("right_leg", arm)
+    ) / 2
+
+    new_total_height = get_eye_height(arm) - scaled_bottom
+    print(
+        "Torso Scaling Expected height: {}, actual height: {}".format(
+            total_height * torso_scale_ratio, new_total_height
+        )
+    )
+
+    # for b in boundry_bones:
+    #     arm.data.bones[b].inherit_scale = saved_bone_inherit_scales[b]
+
+
 def scale_to_floor(
     arm_to_legs,
     arm_thickness,
@@ -611,6 +677,7 @@ def scale_to_floor(
     thigh_percentage,
     custom_scale_ratio,
     scale_relative,
+    keep_head_size,
     upper_body_portion,
 ):
     arm = get_armature()
@@ -631,12 +698,48 @@ def scale_to_floor(
     leg_height_portion = get_leg_length(arm) / eye_z
 
     if scale_relative:
-        # Supposedly the same as below but I don't think that's
-        # actually how this math works
+        # This uses the arm_to_legs parameter, the method below doesn't
         rescale_leg_ratio = rescale_ratio**arm_to_legs
         rescale_arm_ratio = rescale_ratio ** (1 - arm_to_legs)
         leg_scale_ratio = 1 - (1 - (1 / rescale_leg_ratio)) / leg_height_portion
+    elif keep_head_size:
+        # To keep the head size the same, every bit of length taken
+        # from the legs needs to be added to the torso, making their
+        # scalings the inverse of each other. Note that the division
+        # between upper and lower body is determined from the eyes
+        current_ubp = get_upper_body_portion(arm)
+
+        print(
+            "current ubp: {}, desired ubp: {}".format(current_ubp, upper_body_portion)
+        )
+        torso_scale_ratio = upper_body_portion / current_ubp
+        leg_scale_ratio = (1 - upper_body_portion) / (1 - current_ubp)
+
+        # torso_scale_ratio = (1 + torso_scale_ratio) / 2
+        # leg_scale_ratio = (1 + leg_scale_ratio) / 2
+
+        # For debugging, get new scales
+        eye_z = get_eye_height(arm)
+        lowest_point = get_lowest_point()
+        leg_average_z = (
+            get_bone_worldspace_z("left_leg", arm)
+            + get_bone_worldspace_z("right_leg", arm)
+        ) / 2
+
+        ntl = (eye_z - leg_average_z) * torso_scale_ratio
+        ns = ntl / (ntl + ((leg_average_z - lowest_point) * leg_scale_ratio))
+
+        print("Expected New scale: {}".format(ns))
+
+        print("Torso scale ratio: {}".format(torso_scale_ratio))
+        print("Leg scale ratio: {}".format(leg_scale_ratio))
+        # If the chest isn't scaled, the shoulders shouldn't move at
+        # all in this mode, so the entirety of the proportion scaling
+        # happens in the arm lengthening
+        rescale_arm_ratio = rescale_ratio
+
     else:
+        # This uses the upper_body_portion parameter as the primary
         ubp = get_upper_body_portion(arm)
         ub_scale_ratio = ubp / upper_body_portion
         leg_scale_ratio = ub_scale_ratio + (
@@ -645,7 +748,6 @@ def scale_to_floor(
         rescale_leg_ratio = 1 / (leg_height_portion * (leg_scale_ratio - 1) + 1)
         rescale_arm_ratio = rescale_ratio / rescale_leg_ratio
 
-    #
     arm_scale_ratio = calculate_arm_rescaling(arm, rescale_arm_ratio)
 
     print("Total required scale factor is %f" % rescale_ratio)
@@ -660,6 +762,9 @@ def scale_to_floor(
 
     scale_foot = False
     scale_legs(arm, leg_scale_ratio, leg_thickness, scale_foot, thigh_percentage)
+
+    if keep_head_size:
+        scale_torso(arm, torso_scale_ratio)
 
     # This kept getting me - make sure arms are set to inherit scale
     for b in ["left_elbow", "right_elbow", "left_wrist", "right_wrist"]:
@@ -781,6 +886,7 @@ def scale_to_height(new_height, scale_eyes):
     obj.scale = obj.scale * scale_ratio
 
     obj_and_all_children = children_recursive(obj) + [obj]
+
     recursive_object_mode(obj_and_all_children)
     recursive_scale(obj_and_all_children)
 
@@ -806,6 +912,7 @@ def rescale_main(
     custom_scale_ratio,
     scale_eyes,
     scale_relative,
+    keep_head_size,
     upper_body_percent,
 ):
     context = bpy.context
@@ -821,6 +928,7 @@ def rescale_main(
             thigh_percentage,
             custom_scale_ratio,
             scale_relative,
+            keep_head_size,
             upper_body_percent,
         )
     if not s.debug_no_floor:
@@ -896,6 +1004,7 @@ class ArmatureRescale(ArmatureOperator):
             self.custom_scale_ratio,
             self.scale_eyes,
             self.scale_upper_body,
+            self.keep_head_size,
             self.upper_body_percentage / 100,
         )
         return {"FINISHED"}
@@ -912,6 +1021,7 @@ class ArmatureRescale(ArmatureOperator):
         self.custom_scale_ratio = s.custom_scale_ratio
         self.scale_eyes = s.scale_eyes
         self.scale_upper_body = s.imscale_scale_upper_body
+        self.keep_head_size = s.imscale_keep_head_size
         self.upper_body_percentage = s.upper_body_percentage
 
         return self.execute(context)
