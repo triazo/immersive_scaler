@@ -1,0 +1,17 @@
+# wheee
+schema_version = "1.0.0"
+id = "immersive_scaler"
+version = "0.5.2"
+name = "Immersive Scaler"
+tagline = "Fine tuned automated avatar scaling, for vrchat"
+maintainer = "Pager <pager@pager.codes>"
+# Supported types: "add-on", "theme"
+type = "add-on"
+
+tags = ["3D View", "Rigging"]
+
+blender_version_min = "2.81.0"
+
+license = [
+  "SPDX:MIT",
+]

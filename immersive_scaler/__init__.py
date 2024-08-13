@@ -2,7 +2,10 @@
 #
 # (global-set-key (kbd "C-c b") (lambda () (interactive) (shell-command "zip -r ../immersive_scaler.zip ../immersive_scaler")))
 #
+# Or for blender 4.2+
 #
+# (global-set-key (kbd "C-c b") (lambda () (interactive) (shell-command "zip -r ../immersive_scaler_4-2.zip .")))
+
 
 import importlib
 
